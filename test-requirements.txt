@@ -1,0 +1,3 @@
+coverage
+nose
+mock>=0.8.0
