@@ -73,6 +73,9 @@ class SeafDir(object):
 
         return self._cached_dirs_list
 
+    def lookup_dent(self, name):
+        return self.dirents.get(name, None)
+
     def lookup(self, name):
         name = to_utf8(name)
         if name not in self.dirents:
@@ -83,7 +86,7 @@ class SeafDir(object):
             return fs_mgr.load_seafdir(self.store_id, self.version, dent.id)
         else:
             return fs_mgr.load_seafile(self.store_id, self.version, dent.id)
-            
+
     def remove_entry(self, name):
         if name in self.dirents:
             del self.dirents[name]
@@ -157,7 +160,7 @@ class SeafileStream(object):
 class SeafFSManager(object):
     def __init__(self):
         self.obj_store = objstore_factory.get_obj_store('fs')
-        
+
         self._dir_counter = 0
         self._file_counter = 0
 
@@ -284,7 +287,7 @@ class SeafFSManager(object):
         size = d['size']
 
         return blocks, size
-        
+
     def dir_read_count(self):
         return self._dir_counter
     def file_read_count(self):
