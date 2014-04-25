@@ -63,17 +63,17 @@ class SeafObjStoreFactory(object):
         else:
             backend_name = 'fs'
 
+        compressed = obj_type == 'fs'
         if backend_name == 'fs':
             obj_dir = os.path.join(seafile_conf_dir, 'storage', obj_type)
-            compressed = obj_type == 'fs'
-            return SeafObjStoreFS(obj_dir, compressed)
+            return SeafObjStoreFS(compressed, obj_dir)
 
         elif backend_name == 's3':
             # We import s3 backend here to avoid depenedency on boto for users
             # not using s3
             from seafobj.backends.s3 import SeafObjStoreS3
             s3_conf = get_s3_conf(self.seafile_cfg, section)
-            return SeafObjStoreS3(obj_type, s3_conf)
+            return SeafObjStoreS3(compressed, s3_conf)
 
         else:
             raise InvalidConfigError('unknown %s backend "%s"' % (obj_type, backend_name))

@@ -15,9 +15,7 @@ class S3Conf(object):
 class SeafS3Client(object):
     '''Wraps a s3 connection and a bucket'''
     def __init__(self, conf):
-
         self.conf = conf
-
         self.conn = None
         self.bucket = None
 
@@ -45,12 +43,13 @@ class SeafS3Client(object):
 
 class SeafObjStoreS3(AbstractObjStore):
     '''S3 backend for seafile objecs'''
-    def __init__(self, s3_conf):
-        AbstractObjStore.__init__(self)
+    def __init__(self, compressed, s3_conf):
+        AbstractObjStore.__init__(self, compressed)
         self.s3_client = SeafS3Client(s3_conf)
 
-    def read_obj(self, repo_id, version, obj_id):
-        raise NotImplementedError
+    def read_obj_raw(self, repo_id, version, obj_id):
+        real_obj_id = '%s/%s' % (repo_id, obj_id)
+        return self.s3_client.read_object_content(real_obj_id)
 
     def get_name(self):
         return 'S3 storage backend'
