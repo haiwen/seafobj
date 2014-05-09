@@ -4,9 +4,6 @@ import ConfigParser
 from seafobj.exceptions import InvalidConfigError
 from seafobj.backends.filesystem import SeafObjStoreFS
 
-seafile_conf_dir = os.environ['SEAFILE_CONF_DIR']
-seafile_conf = os.path.join(seafile_conf_dir, 'seafile.conf')
-
 def get_s3_conf(cfg, section):
     key_id = cfg.get(section, 'key_id')
     key = cfg.get(section, 'key')
@@ -35,44 +32,56 @@ def get_s3_conf(cfg, section):
 
     return conf
 
+class SeafileConfig(object):
+    def __init__(self):
+        self.cfg = None
+        self.seafile_conf_dir = os.environ['SEAFILE_CONF_DIR']
+        self.seafile_conf = os.path.join(self.seafile_conf_dir, 'seafile.conf')
+
+    def get_config_parser(self):
+        if self.cfg is None:
+            self.cfg = ConfigParser.ConfigParser()
+            try:
+                self.cfg.read(self.seafile_conf)
+            except Exception, e:
+                raise InvalidConfigError(str(e))
+        return self.cfg
+
+    def get_seafile_storage_dir(self):
+        return os.path.join(self.seafile_conf_dir, 'storage')
+
 class SeafObjStoreFactory(object):
     obj_section_map = {
         'blocks': 'block_backend',
         'fs': 'fs_object_backend',
         'commits': 'commit_object_backend',
     }
-    def __init__(self):
-        self.seafile_cfg = None
+    def __init__(self, cfg=None):
+        self.seafile_cfg = cfg or SeafileConfig()
 
     def get_obj_store(self, obj_type):
         '''Return an implementation of SeafileObjStore'''
-        if self.seafile_cfg is None:
-            self.seafile_cfg = ConfigParser.ConfigParser()
-            try:
-                self.seafile_cfg.read(seafile_conf)
-            except Exception, e:
-                raise InvalidConfigError(str(e))
-
+        cfg = self.seafile_cfg.get_config_parser()
         try:
             section = self.obj_section_map[obj_type]
         except KeyError:
             raise RuntimeError('unknown obj_type ' + obj_type)
 
-        if self.seafile_cfg.has_option(section, 'name'):
-            backend_name = self.seafile_cfg.get(section, 'name')
+        if cfg.has_option(section, 'name'):
+            backend_name = cfg.get(section, 'name')
         else:
             backend_name = 'fs'
 
         compressed = obj_type == 'fs'
         if backend_name == 'fs':
-            obj_dir = os.path.join(seafile_conf_dir, 'storage', obj_type)
+            obj_dir = os.path.join(self.seafile_cfg.get_seafile_storage_dir(), obj_type)
             return SeafObjStoreFS(compressed, obj_dir)
 
         elif backend_name == 's3':
             # We import s3 backend here to avoid depenedency on boto for users
             # not using s3
             from seafobj.backends.s3 import SeafObjStoreS3
-            s3_conf = get_s3_conf(self.seafile_cfg, section)
+            s3_conf = get_s3_conf(cfg, section)
             return SeafObjStoreS3(compressed, s3_conf)
 
         else:
