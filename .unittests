@@ -10,6 +10,7 @@ else
     # coverage.
     cover_branches="--cover-branches --cover-html --cover-html-dir=$TOP_DIR/cover"
 fi
+export SEAFILE_CONF_DIR=
 cd $TOP_DIR/test/unit
 if [[ $1 == "cover" ]]; then
     shift

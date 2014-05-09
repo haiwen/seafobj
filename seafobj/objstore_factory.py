@@ -4,6 +4,14 @@ import ConfigParser
 from seafobj.exceptions import InvalidConfigError
 from seafobj.backends.filesystem import SeafObjStoreFS
 
+def get_ceph_conf(cfg, section):
+    config_file = cfg.get(section, 'ceph_config')
+    pool_name = cfg.get(section, 'pool')
+
+    from seafobj.backends.ceph import CephConf
+
+    return CephConf(config_file, pool_name)
+
 def get_s3_conf(cfg, section):
     key_id = cfg.get(section, 'key_id')
     key = cfg.get(section, 'key')
@@ -83,6 +91,13 @@ class SeafObjStoreFactory(object):
             from seafobj.backends.s3 import SeafObjStoreS3
             s3_conf = get_s3_conf(cfg, section)
             return SeafObjStoreS3(compressed, s3_conf)
+
+        elif backend_name == 'ceph':
+            # We import ceph backend here to avoid depenedency on rados for
+            # users not using rados
+            from seafobj.backends.ceph import SeafObjStoreCeph
+            ceph_conf = get_ceph_conf(cfg, section)
+            return SeafObjStoreCeph(compressed, ceph_conf)
 
         else:
             raise InvalidConfigError('unknown %s backend "%s"' % (obj_type, backend_name))
