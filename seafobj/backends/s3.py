@@ -5,12 +5,14 @@ import boto.s3.connection
 from boto.s3.key import Key
 
 class S3Conf(object):
-    def __init__(self, key_id, key, bucket_name, host, port):
+    def __init__(self, key_id, key, bucket_name, host, port, use_v4_sig, aws_region):
         self.key_id = key_id
         self.key = key
         self.bucket_name = bucket_name
         self.host = host
         self.port = port
+        self.use_v4_sig = use_v4_sig
+        self.aws_region = aws_region
 
 class SeafS3Client(object):
     '''Wraps a s3 connection and a bucket'''
@@ -21,7 +23,15 @@ class SeafS3Client(object):
 
     def do_connect(self):
         if self.conf.host is None:
-            self.conn = boto.connect_s3(self.conf.key_id, self.conf.key)
+            # If version 4 signature is used, boto requires 'host' parameter
+            # Also there is a bug in AWS Frankfurt that causes boto doesn't work.
+            # The current work around is to give specific service address, like
+            # s3.eu-central-1.amazonaws.com instead of s3.amazonaws.com.
+            if self.conf.use_v4_sig:
+                self.conn = boto.connect_s3(self.conf.key_id, self.conf.key,
+                                            host='s3.%s.amazonaws.com' % self.conf.aws_region)
+            else:
+                self.conn = boto.connect_s3(self.conf.key_id, self.conf.key)
         else:
             self.conn = boto.connect_s3(
                 aws_access_key_id=self.conf.key_id,

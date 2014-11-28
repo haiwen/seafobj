@@ -35,8 +35,18 @@ def get_s3_conf(cfg, section):
         except ValueError:
             raise InvalidConfigError('invalid s3 host %s' % addr)
 
+    use_v4_sig = False
+    if cfg.has_option(section, 'use_v4_signature'):
+        use_v4_sig = cfg.getboolean(section, 'use_v4_signature')
+
+    aws_region = None
+    if use_v4_sig:
+        if not cfg.has_option(section, 'aws_region'):
+            raise InvalidConfigError('aws_region is not configured')
+        aws_region = cfg.get(section, 'aws_region')
+
     from seafobj.backends.s3 import S3Conf
-    conf = S3Conf(key_id, key, bucket, host, port)
+    conf = S3Conf(key_id, key, bucket, host, port, use_v4_sig, aws_region)
 
     return conf
 
