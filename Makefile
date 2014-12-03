@@ -7,14 +7,14 @@ all:
 	@echo
 
 dist:
-	tar czvf seafobj.tar.gz seafobj/ \
+	tar czvf \
 	--exclude='*.git*' \
 	--exclude='*.log' \
 	--exclude='*~' \
 	--exclude='*#' \
 	--exclude='*.gz' \
 	--exclude='*.pyc' \
-	--exclude-vcs
+	-f seafobj.tar.gz seafobj
 
 unittest:
 	@bash .unittests
