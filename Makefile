@@ -7,7 +7,7 @@ all:
 	@echo
 
 dist:
-	tar czvf \
+	tar czv \
 	--exclude='*.git*' \
 	--exclude='*.log' \
 	--exclude='*~' \
