@@ -9,9 +9,10 @@ from seafobj.utils import to_utf8
 from seafobj.utils.ceph_utils import ioctx_set_namespace
 
 class CephConf(object):
-    def __init__(self, ceph_conf_file, pool_name):
+    def __init__(self, ceph_conf_file, pool_name, ceph_client_id):
         self.pool_name = pool_name
         self.ceph_conf_file = ceph_conf_file
+        self.ceph_client_id = ceph_client_id
 
 class IoCtxPool(object):
     '''since we need to set the namespace before read the object, we need to
@@ -21,7 +22,10 @@ class IoCtxPool(object):
     def __init__(self, conf, pool_size=5):
         self.conf = conf
         self.pool = Queue.Queue(pool_size)
-        self.cluster = rados.Rados(conffile=conf.ceph_conf_file)
+        if conf.ceph_client_id:
+            self.cluster = rados.Rados(conffile=conf.ceph_conf_file, rados_id=conf.ceph_client_id)
+        else:
+            self.cluster = rados.Rados(conffile=conf.ceph_conf_file)
         self.lock = threading.Lock()
 
     def get_ioctx(self, repo_id):

@@ -7,10 +7,13 @@ from seafobj.backends.filesystem import SeafObjStoreFS
 def get_ceph_conf(cfg, section):
     config_file = cfg.get(section, 'ceph_config')
     pool_name = cfg.get(section, 'pool')
+    ceph_client_id = ''
+    if cfg.has_option(section, 'ceph_client_id'):
+        ceph_client_id = cfg.get(section, 'ceph_client_id')
 
     from seafobj.backends.ceph import CephConf
 
-    return CephConf(config_file, pool_name)
+    return CephConf(config_file, pool_name, ceph_client_id)
 
 def get_s3_conf(cfg, section):
     key_id = cfg.get(section, 'key_id')
