@@ -53,6 +53,19 @@ def get_s3_conf(cfg, section):
 
     return conf
 
+def get_oss_conf(cfg, section):
+    key_id = cfg.get(section, 'key_id')
+    key = cfg.get(section, 'key')
+    bucket = cfg.get(section, 'bucket')
+    region = cfg.get(section, 'region')
+
+    host = 'oss-cn-%s-internal.aliyuncs.com' % region
+
+    from seafobj.backends.oss import OSSConf
+    conf = OSSConf(key_id, key, bucket, host)
+
+    return conf
+
 class SeafileConfig(object):
     def __init__(self):
         self.cfg = None
@@ -111,6 +124,11 @@ class SeafObjStoreFactory(object):
             from seafobj.backends.ceph import SeafObjStoreCeph
             ceph_conf = get_ceph_conf(cfg, section)
             return SeafObjStoreCeph(compressed, ceph_conf)
+
+        elif backend_name == 'oss':
+            from seafobj.backends.oss import SeafObjStoreOSS
+            oss_conf = get_oss_conf(cfg, section)
+            return SeafObjStoreOSS(compressed, oss_conf)
 
         else:
             raise InvalidConfigError('unknown %s backend "%s"' % (obj_type, backend_name))
