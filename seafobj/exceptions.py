@@ -21,3 +21,8 @@ class ObjectFormatError(SeafObjException):
 
     '''
     pass
+
+class GetObjectError(SeafObjException):
+    '''This exception is raised when we failed to read object from backend.
+    '''
+    pass
