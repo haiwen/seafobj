@@ -21,8 +21,8 @@ class SeafOSSClient(object):
     def read_object_content(self, obj_id):
         res = self.oss.get_object(self.conf.bucket_name, obj_id)
         if res.status != httplib.OK:
-            raise GetObjectError("Failed to get object %s from bucket %s: %s %s",
-                                 obj_id, self.conf.bucket_name, res.status, res.reason)
+            raise GetObjectError("Failed to get object %s from bucket %s: %s %s" % (
+                                 obj_id, self.conf.bucket_name, res.status, res.reason))
         return res.read()
 
 class SeafObjStoreOSS(AbstractObjStore):
