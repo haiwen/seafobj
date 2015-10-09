@@ -37,7 +37,7 @@ class SeafDirent(object):
 
     def __str__(self):
         return 'SeafDirent(type=%s, name=%s, size=%s, id=%s, mtime=%s)' % \
-            ('dir' if type == SeafDirent.DIR else 'file', self.name, self.size, self.id, self.mtime)
+            ('dir' if self.type == SeafDirent.DIR else 'file', self.name, self.size, self.id, self.mtime)
 
     @staticmethod
     def fromV0(name, type, id):
