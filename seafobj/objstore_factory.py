@@ -70,7 +70,10 @@ class SeafileConfig(object):
     def __init__(self):
         self.cfg = None
         self.seafile_conf_dir = os.environ['SEAFILE_CONF_DIR']
-        self.seafile_conf = os.path.join(self.seafile_conf_dir, 'seafile.conf')
+        self.central_config_dir = os.environ.get('SEAFILE_CENTRAL_CONF_DIR',
+                                                 None)
+        confdir = self.central_config_dir or self.seafile_conf_dir
+        self.seafile_conf = os.path.join(confdir, 'seafile.conf')
 
     def get_config_parser(self):
         if self.cfg is None:
