@@ -53,13 +53,14 @@ class SeafS3Client(object):
 
 class SeafObjStoreS3(AbstractObjStore):
     '''S3 backend for seafile objecs'''
-    def __init__(self, compressed, s3_conf):
-        AbstractObjStore.__init__(self, compressed)
+    def __init__(self, compressed, s3_conf, crypto=None):
+        AbstractObjStore.__init__(self, compressed, crypto)
         self.s3_client = SeafS3Client(s3_conf)
 
     def read_obj_raw(self, repo_id, version, obj_id):
         real_obj_id = '%s/%s' % (repo_id, obj_id)
-        return self.s3_client.read_object_content(real_obj_id)
+        data = self.s3_client.read_object_content(real_obj_id)
+        return data if self.crypto is None else self.crypto.dec_data(data)
 
     def get_name(self):
         return 'S3 storage backend'

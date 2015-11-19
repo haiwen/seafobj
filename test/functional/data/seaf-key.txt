@@ -1,0 +1,3 @@
+[store_crypt]
+enc_key = 9ef2971030de5e0d46edb7c1951652a0dccbed8b72758814614e9a546f1090d1
+enc_iv = c8eabd6237e80be2894c75736797bbe3

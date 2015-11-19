@@ -71,12 +71,13 @@ class SeafCephClient(object):
 
 class SeafObjStoreCeph(AbstractObjStore):
     '''Ceph backend for seafile objecs'''
-    def __init__(self, compressed, ceph_conf):
-        AbstractObjStore.__init__(self, compressed)
+    def __init__(self, compressed, ceph_conf, crypto=None):
+        AbstractObjStore.__init__(self, compressed, crypto)
         self.ceph_client = SeafCephClient(ceph_conf)
 
     def read_obj_raw(self, repo_id, version, obj_id):
-        return self.ceph_client.read_object_content(repo_id, obj_id)
+        data = self.ceph_client.read_object_content(repo_id, obj_id)
+        return data if self.crypto is None else self.crypto.dec_data(data)
 
     def get_name(self):
         return 'Ceph storage backend'

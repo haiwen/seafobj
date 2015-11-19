@@ -1,5 +1,6 @@
 import os
 import ConfigParser
+import binascii
 
 from seafobj.exceptions import InvalidConfigError
 from seafobj.backends.filesystem import SeafObjStoreFS
@@ -103,6 +104,26 @@ class SeafileConfig(object):
                 raise InvalidConfigError(str(e))
         return self.cfg
 
+    def get_seaf_crypto(self):
+        if not self.cfg.has_option('store_crypt', 'key_path'):
+            return None
+        key_path = self.cfg.get('store_crypt', 'key_path')
+        key_config = ConfigParser.ConfigParser()
+        try:
+            key_config.read(key_path)
+        except Exception:
+            return None
+        if not key_config.has_option('store_crypt', 'enc_key') or not \
+           key_config.has_option('store_crypt', 'enc_iv'):
+            return None
+        hex_key = key_config.get('store_crypt', 'enc_key')
+        hex_iv = key_config.get('store_crypt', 'enc_iv')
+        raw_key = binascii.a2b_hex(hex_key)
+        raw_iv = binascii.a2b_hex(hex_iv)
+
+        from seafobj.utils.crypto import SeafCrypto
+        return SeafCrypto(raw_key, raw_iv)
+
     def get_seafile_storage_dir(self):
         ccnet_conf_dir = os.environ.get('CCNET_CONF_DIR', '')
         if ccnet_conf_dir:
@@ -134,6 +155,8 @@ class SeafObjStoreFactory(object):
         except KeyError:
             raise RuntimeError('unknown obj_type ' + obj_type)
 
+        crypto = self.seafile_cfg.get_seaf_crypto()
+
         if cfg.has_option(section, 'name'):
             backend_name = cfg.get(section, 'name')
         else:
@@ -142,31 +165,31 @@ class SeafObjStoreFactory(object):
         compressed = obj_type == 'fs'
         if backend_name == 'fs':
             obj_dir = os.path.join(self.seafile_cfg.get_seafile_storage_dir(), obj_type)
-            return SeafObjStoreFS(compressed, obj_dir)
+            return SeafObjStoreFS(compressed, obj_dir, crypto)
 
         elif backend_name == 's3':
             # We import s3 backend here to avoid depenedency on boto for users
             # not using s3
             from seafobj.backends.s3 import SeafObjStoreS3
             s3_conf = get_s3_conf(cfg, section)
-            return SeafObjStoreS3(compressed, s3_conf)
+            return SeafObjStoreS3(compressed, s3_conf, crypto)
 
         elif backend_name == 'ceph':
             # We import ceph backend here to avoid depenedency on rados for
             # users not using rados
             from seafobj.backends.ceph import SeafObjStoreCeph
             ceph_conf = get_ceph_conf(cfg, section)
-            return SeafObjStoreCeph(compressed, ceph_conf)
+            return SeafObjStoreCeph(compressed, ceph_conf, crypto)
 
         elif backend_name == 'oss':
             from seafobj.backends.alioss import SeafObjStoreOSS
             oss_conf = get_oss_conf(cfg, section)
-            return SeafObjStoreOSS(compressed, oss_conf)
+            return SeafObjStoreOSS(compressed, oss_conf, crypto)
 
         elif backend_name == 'swift':
             from seafobj.backends.swift import SeafObjStoreSwift
             swift_conf = get_swift_conf(cfg, section)
-            return SeafObjStoreSwift(compressed, swift_conf)
+            return SeafObjStoreSwift(compressed, swift_conf, crypto)
 
         else:
             raise InvalidConfigError('unknown %s backend "%s"' % (obj_type, backend_name))

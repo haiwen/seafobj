@@ -110,6 +110,8 @@ class FakeSeafileConfig(object):
     def get_seafile_storage_dir(self):
         return ''
 
+    def get_seaf_crypto(self):
+        return None
 
 class TestObjstoreFactory(unittest.TestCase):
     def setUp(self):
