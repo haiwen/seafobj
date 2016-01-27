@@ -85,7 +85,17 @@ class SeafileConfig(object):
         return self.cfg
 
     def get_seafile_storage_dir(self):
-        return os.path.join(self.seafile_conf_dir, 'storage')
+        ccnet_conf_dir = os.environ.get('CCNET_CONF_DIR', '')
+        if not ccnet_conf_dir:
+            raise RuntimeError('CCNET_CONF_DIR is not set')
+
+        seafile_ini = os.path.join(ccnet_conf_dir, 'seafile.ini')
+        if not os.access(seafile_ini, os.F_OK):
+            raise RuntimeError('%s does not exist', seafile_ini)
+
+        with open(seafile_ini) as f:
+            seafile_data_dir = f.readline()
+            return os.path.join(seafile_data_dir, 'storage')
 
 class SeafObjStoreFactory(object):
     obj_section_map = {
