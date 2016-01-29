@@ -94,7 +94,7 @@ class SeafileConfig(object):
             raise RuntimeError('%s does not exist', seafile_ini)
 
         with open(seafile_ini) as f:
-            seafile_data_dir = f.readline()
+            seafile_data_dir = f.readline().rstrip()
             return os.path.join(seafile_data_dir, 'storage')
 
 class SeafObjStoreFactory(object):
