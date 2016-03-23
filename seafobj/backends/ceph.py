@@ -9,7 +9,7 @@ from seafobj.utils import to_utf8
 from seafobj.utils.ceph_utils import ioctx_set_namespace
 
 class CephConf(object):
-    def __init__(self, ceph_conf_file, pool_name, ceph_client_id):
+    def __init__(self, ceph_conf_file, pool_name, ceph_client_id=None):
         self.pool_name = pool_name
         self.ceph_conf_file = ceph_conf_file
         self.ceph_client_id = ceph_client_id

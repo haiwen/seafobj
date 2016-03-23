@@ -17,6 +17,7 @@ from seafobj.objstore_factory import SeafObjStoreFactory
 from seafobj.backends.filesystem import SeafObjStoreFS
 from seafobj.backends.s3 import SeafObjStoreS3
 from seafobj.backends.ceph import SeafObjStoreCeph
+from seafobj.backends.swift import SeafObjStoreSwift
 
 FS_CONF = '''
 '''
@@ -70,6 +71,32 @@ pool = seafile-fs
 memcached_options = --SERVER=localhost --POOL-MIN=10 --POOL-MAX=100
 '''
 
+SWIFT_CONF = '''
+[block_backend]
+name = swift
+user_name = admin
+password = openstack
+container = seafile-block
+auth_host = 192.168.56.31:5000
+tenant = adminTenant
+
+[commit_object_backend]
+name = swift
+user_name = admin
+password = openstack
+container = seafile-commit
+auth_host = 192.168.56.31:5000
+tenant = adminTenant
+
+[fs_object_backend]
+name = swift
+user_name = admin
+password = openstack
+container = seafile-fs
+auth_host = 192.168.56.31:5000
+tenant = adminTenant
+'''
+
 class FakeSeafileConfig(object):
     def __init__(self, content):
         self.cfg = ConfigParser.ConfigParser()
@@ -118,6 +145,13 @@ class TestObjstoreFactory(unittest.TestCase):
         store = test_factory.get_obj_store('fs')
         self.verify_ceph_conf(store.ceph_client.ioctx_pool.conf, 'seafile-fs')
 
+    def test_factory_with_swift_backend(self):
+        test_factory = self.create_factory_with_conf(SWIFT_CONF)
+        self.assert_factory_creates_instance(test_factory, SeafObjStoreSwift)
+
+        store = test_factory.get_obj_store('fs')
+        self.verify_swift_conf(store.swift_client.swift_conf)
+
     ### helper methods
     def assert_factory_creates_instance(self, factory, cls):
         self.assertIsInstance(factory.get_obj_store('fs'), cls)
@@ -134,3 +168,8 @@ class TestObjstoreFactory(unittest.TestCase):
     def verify_ceph_conf(self, ceph_conf, pool):
         self.assertEqual(ceph_conf.pool_name, pool)
         self.assertEqual(ceph_conf.ceph_conf_file, '/etc/ceph/ceph.conf')
+
+    def verify_swift_conf(self, swift_conf):
+        self.assertEqual(swift_conf.container, 'seafile-fs')
+        self.assertEqual(swift_conf.auth_ver, 'v2.0')
+        self.assertEqual(swift_conf.use_https, False)

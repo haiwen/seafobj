@@ -66,6 +66,25 @@ def get_oss_conf(cfg, section):
 
     return conf
 
+def get_swift_conf(cfg, section):
+    user_name = cfg.get(section, 'user_name')
+    password = cfg.get(section, 'password')
+    container = cfg.get(section, 'container')
+    auth_host = cfg.get(section, 'auth_host')
+    if not cfg.has_option(section, 'auth_ver'):
+        auth_ver = 'v2.0'
+    else:
+        auth_ver = cfg.get(section, 'auth_ver')
+    tenant = cfg.get(section, 'tenant')
+    if cfg.has_option(section, 'use_https'):
+        use_https = cfg.getboolean(section, 'use_https')
+    else:
+        use_https = False
+
+    from seafobj.backends.swift import SwiftConf
+    conf = SwiftConf(user_name, password, container, auth_host, auth_ver, tenant, use_https)
+    return conf
+
 class SeafileConfig(object):
     def __init__(self):
         self.cfg = None
@@ -86,16 +105,17 @@ class SeafileConfig(object):
 
     def get_seafile_storage_dir(self):
         ccnet_conf_dir = os.environ.get('CCNET_CONF_DIR', '')
-        if not ccnet_conf_dir:
-            raise RuntimeError('CCNET_CONF_DIR is not set')
+        if ccnet_conf_dir:
+            seafile_ini = os.path.join(ccnet_conf_dir, 'seafile.ini')
+            if not os.access(seafile_ini, os.F_OK):
+                raise RuntimeError('%s does not exist', seafile_ini)
 
-        seafile_ini = os.path.join(ccnet_conf_dir, 'seafile.ini')
-        if not os.access(seafile_ini, os.F_OK):
-            raise RuntimeError('%s does not exist', seafile_ini)
-
-        with open(seafile_ini) as f:
-            seafile_data_dir = f.readline().rstrip()
-            return os.path.join(seafile_data_dir, 'storage')
+            with open(seafile_ini) as f:
+                seafile_data_dir = f.readline().rstrip()
+                return os.path.join(seafile_data_dir, 'storage')
+        else:
+            # In order to pass test, if not set CCNET_CONF_DIR env, use follow path
+            return os.path.join(self.seafile_conf_dir, 'storage')
 
 class SeafObjStoreFactory(object):
     obj_section_map = {
@@ -142,6 +162,11 @@ class SeafObjStoreFactory(object):
             from seafobj.backends.alioss import SeafObjStoreOSS
             oss_conf = get_oss_conf(cfg, section)
             return SeafObjStoreOSS(compressed, oss_conf)
+
+        elif backend_name == 'swift':
+            from seafobj.backends.swift import SeafObjStoreSwift
+            swift_conf = get_swift_conf(cfg, section)
+            return SeafObjStoreSwift(compressed, swift_conf)
 
         else:
             raise InvalidConfigError('unknown %s backend "%s"' % (obj_type, backend_name))

@@ -26,3 +26,9 @@ class GetObjectError(SeafObjException):
     '''This exception is raised when we failed to read object from backend.
     '''
     pass
+
+class SwiftAuthenticateError(SeafObjException):
+    '''This exception is raised when failed to authenticate for swift.
+    '''
+    pass
+
