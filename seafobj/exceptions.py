@@ -32,3 +32,7 @@ class SwiftAuthenticateError(SeafObjException):
     '''
     pass
 
+class SeafCryptoException(SeafObjException):
+    '''This exception is raised when crypto realted operation failed.
+    '''
+    pass

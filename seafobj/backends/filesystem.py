@@ -19,7 +19,7 @@ class SeafObjStoreFS(AbstractObjStore):
         with open(path, 'rb') as fp:
             data = fp.read()
             
-        return data if self.crypto is None else self.crypto.dec_data(data)
+        return data
         
     def get_name(self):
         return 'filesystem storage backend'

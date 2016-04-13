@@ -5,6 +5,7 @@ from ctypes import (
     c_void_p, c_int, POINTER, byref
 )
 from ctypes.util import find_library
+from seafobj.exceptions import SeafCryptoException
 
 libname = find_library('crypto')
 if libname is None:
@@ -63,28 +64,28 @@ class SeafCrypto(object):
 
     def enc_data(self, data):
         if not data:
-            raise Exception('[crytpo] Invalid encrypted data')
+            raise SeafCryptoException('Invalid encrypted data')
 
         ctx = EVP_CIPHER_CTX_new()
         if not ctx:
-            raise Exception('[crytpo] Failed to create cipher ctx')
+            raise SeafCryptoException('Failed to create cipher ctx')
 
         try:
             if EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), None,
                                   self.key, self.iv) == 0:
-                raise Exception('[crytpo] Failed to init cipher ctx')
+                raise SeafCryptoException('Failed to init cipher ctx')
 
             out = create_string_buffer(len(data) + 16)
             out_len = c_int(0)
             if EVP_EncryptUpdate(ctx, out, byref(out_len),
                                  data, len(data)) == 0:
-                raise Exception('[crypto] Failed to encrypt update')
+                raise SeafCryptoException('Failed to encrypt update')
 
             out_final = create_string_buffer(16)
             out_final_len = c_int(0)
             if EVP_EncryptFinal_ex(ctx, out_final,
                                    byref(out_final_len)) == 0:
-                raise Exception('[crypto] Failed to encrypt final')
+                raise SeafCryptoException('Failed to encrypt final')
 
             return out.raw[:out_len.value] + out_final.raw[:out_final_len.value]
         finally:
@@ -92,28 +93,28 @@ class SeafCrypto(object):
 
     def dec_data(self, data):
         if not data or len(data) % 16 != 0:
-            raise Exception('[crytpo] Invalid decrypted data')
+            raise SeafCryptoException('Invalid decrypted data')
 
         ctx = EVP_CIPHER_CTX_new()
         if not ctx:
-            raise Exception('[crytpo] Failed to create cipher ctx')
+            raise SeafCryptoException('Failed to create cipher ctx')
 
         try:
             if EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), None,
                                   self.key, self.iv) == 0:
-                raise Exception('[crytpo] Failed to init cipher ctx')
+                raise SeafCryptoException('Failed to init cipher ctx')
 
             out = create_string_buffer(len(data))
             out_len = c_int(0)
             if EVP_DecryptUpdate(ctx, out, byref(out_len),
                                  data, len(data)) == 0:
-                raise Exception('[crypto] Failed to decrypt update')
+                raise SeafCryptoException('Failed to decrypt update')
 
             out_final = create_string_buffer(16)
             out_final_len = c_int(0)
             if EVP_DecryptFinal_ex(ctx, out_final,
                                    byref(out_final_len)) == 0:
-                raise Exception('[crypto] Failed to decrypt final')
+                raise SeafCryptoException('Failed to decrypt final')
 
             return out.raw[:out_len.value] + out_final.raw[:out_final_len.value]
         finally:

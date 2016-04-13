@@ -10,6 +10,8 @@ class AbstractObjStore(object):
 
     def read_obj(self, repo_id, version, obj_id):
         data = self.read_obj_raw(repo_id, version, obj_id)
+        if self.crypto:
+            data = self.crypto.dec_data(data)
         if self.compressed and version == 1:
             data = zlib.decompress(data)
 

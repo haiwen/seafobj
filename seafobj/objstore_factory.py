@@ -108,14 +108,15 @@ class SeafileConfig(object):
         if not self.cfg.has_option('store_crypt', 'key_path'):
             return None
         key_path = self.cfg.get('store_crypt', 'key_path')
+        if not os.path.exists(key_path):
+            raise InvalidConfigError('key file %s doesn\'t exist' % key_path)
+
         key_config = ConfigParser.ConfigParser()
-        try:
-            key_config.read(key_path)
-        except Exception:
-            return None
+        key_config.read(key_path)
         if not key_config.has_option('store_crypt', 'enc_key') or not \
            key_config.has_option('store_crypt', 'enc_iv'):
-            return None
+            raise InvalidConfigError('Invalid key file %s: incomplete info' % key_path)
+
         hex_key = key_config.get('store_crypt', 'enc_key')
         hex_iv = key_config.get('store_crypt', 'enc_iv')
         raw_key = binascii.a2b_hex(hex_key)

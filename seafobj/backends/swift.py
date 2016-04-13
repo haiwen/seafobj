@@ -96,7 +96,7 @@ class SeafObjStoreSwift(AbstractObjStore):
     def read_obj_raw(self, repo_id, version, obj_id):
         real_obj_id = '%s/%s' % (repo_id, obj_id)
         data = self.swift_client.read_object_content(real_obj_id)
-        return data if self.crypto is None else self.crypto.dec_data(data)
+        return data
 
     def get_name(self):
         return 'Swift storage backend'

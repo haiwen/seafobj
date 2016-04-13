@@ -77,7 +77,7 @@ class SeafObjStoreCeph(AbstractObjStore):
 
     def read_obj_raw(self, repo_id, version, obj_id):
         data = self.ceph_client.read_object_content(repo_id, obj_id)
-        return data if self.crypto is None else self.crypto.dec_data(data)
+        return data
 
     def get_name(self):
         return 'Ceph storage backend'
