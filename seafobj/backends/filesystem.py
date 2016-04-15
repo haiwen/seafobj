@@ -8,8 +8,8 @@ def id_to_path(dirname, obj_id):
 
 class SeafObjStoreFS(AbstractObjStore):
     '''FS backend'''
-    def __init__(self, compressed, obj_dir):
-        AbstractObjStore.__init__(self, compressed)
+    def __init__(self, compressed, obj_dir, crypto=None):
+        AbstractObjStore.__init__(self, compressed, crypto)
         self.obj_dir = obj_dir
         self.compressed = compressed
 

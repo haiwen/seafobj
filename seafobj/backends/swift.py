@@ -89,13 +89,14 @@ class SeafSwiftClient(object):
 
 class SeafObjStoreSwift(AbstractObjStore):
     '''Swift backend for seafile objecs'''
-    def __init__(self, compressed, swift_conf):
-        AbstractObjStore.__init__(self, compressed)
+    def __init__(self, compressed, swift_conf, crypto=None):
+        AbstractObjStore.__init__(self, compressed, crypto)
         self.swift_client = SeafSwiftClient(swift_conf)
 
     def read_obj_raw(self, repo_id, version, obj_id):
         real_obj_id = '%s/%s' % (repo_id, obj_id)
-        return self.swift_client.read_object_content(real_obj_id)
+        data = self.swift_client.read_object_content(real_obj_id)
+        return data
 
     def get_name(self):
         return 'Swift storage backend'

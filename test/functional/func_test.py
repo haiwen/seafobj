@@ -77,3 +77,7 @@ class FuncTest(unittest.TestCase):
 
         file_x = dir.lookup('not.exist')
         self.assertIsNone(file_x)
+
+    def test_enc_config(self):
+        # not set enc_path in conf, crypto object of obj should be None
+        self.assertIsNone(commit_mgr.obj_store.crypto)
