@@ -16,5 +16,9 @@ def ioctx_set_namespace(ioctx, namespace):
     if not isinstance(namespace, str):
         raise TypeError('namespace must be a string')
 
-    rados.run_in_thread(ioctx.librados.rados_ioctx_set_namespace,
-                        (ioctx.io, c_char_p(namespace)))
+    if hasattr(ioctx, 'set_namespace'):
+        ioctx.set_namespace(namespace)
+    else:
+        # A hack to set namespace for older version (<= 0.94.x) rados python lib.
+        rados.run_in_thread(ioctx.librados.rados_ioctx_set_namespace,
+                            (ioctx.io, c_char_p(namespace)))
