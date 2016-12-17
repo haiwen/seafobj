@@ -27,3 +27,14 @@ class AbstractObjStore(object):
     def get_name(self):
         '''Get the backend name for display in the log'''
         raise NotImplementedError
+
+    def list_objs(self):
+        '''List all objects'''
+        raise NotImplementedError
+
+    def obj_exists(self, repo_id, obj_id):
+        raise NotImplementedError
+
+    def write_obj(self, data, repo_id, obj_id):
+        '''Write data to destination backend'''
+        raise NotImplementedError

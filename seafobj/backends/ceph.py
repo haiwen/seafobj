@@ -2,6 +2,7 @@ import Queue
 import threading
 
 import rados
+import logging
 
 from .base import AbstractObjStore
 
@@ -70,7 +71,7 @@ class SeafCephClient(object):
             self.ioctx_pool.return_ioctx(ioctx)
 
 class SeafObjStoreCeph(AbstractObjStore):
-    '''Ceph backend for seafile objecs'''
+    '''Ceph backend for seafile objects'''
     def __init__(self, compressed, ceph_conf, crypto=None):
         AbstractObjStore.__init__(self, compressed, crypto)
         self.ceph_client = SeafCephClient(ceph_conf)
@@ -81,3 +82,22 @@ class SeafObjStoreCeph(AbstractObjStore):
 
     def get_name(self):
         return 'Ceph storage backend'
+
+    def obj_exists(self, repo_id, obj_id):
+        ioctx = self.ceph_client.ioctx_pool.get_ioctx(repo_id)
+        try:
+            ioctx.stat(obj_id)
+        except rados.ObjectNotFound:
+            return False
+
+        return True
+
+    def write_obj(self, data, repo_id, obj_id):
+        try:
+            ioctx = self.ceph_client.ioctx_pool.get_ioctx(repo_id)
+            ioctx.write_full(obj_id, data)
+        except Exception:
+            raise
+        finally:
+            self.ceph_client.ioctx_pool.return_ioctx(ioctx)
+        
