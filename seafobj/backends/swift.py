@@ -7,7 +7,7 @@ from seafobj.backends.base import AbstractObjStore
 from seafobj.exceptions import GetObjectError, SwiftAuthenticateError
 
 class SwiftConf(object):
-    def __init__(self, user_name, password, container, auth_host, auth_ver, tenant, use_https):
+    def __init__(self, user_name, password, container, auth_host, auth_ver, tenant, use_https, region):
         self.user_name = user_name
         self.password = password
         self.container = container
@@ -15,6 +15,7 @@ class SwiftConf(object):
         self.auth_ver = auth_ver
         self.tenant = tenant
         self.use_https = use_https
+        self.region = region
 
 class SeafSwiftClient(object):
     MAX_RETRY = 2
@@ -59,11 +60,19 @@ class SeafSwiftClient(object):
             catalogs = data_json['access']['serviceCatalog']
             for catalog in catalogs:
                 if catalog['type'] == 'object-store':
-                    self.storage_url = catalog['endpoints'][0]['publicURL']
-                    return
+                    if self.swift_conf.region:
+                        for endpoint in catalog['endpoints']:
+                            if endpoint['region'] == self.swift_conf.region:
+                                self.storage_url = endpoint['publicURL']
+                                return
+                    else:
+                        self.storage_url = catalog['endpoints'][0]['publicURL']
+                        return
         else:
             raise SwiftAuthenticateError('[swift] Unexpected code when authenticate: %d' %
                                          ret_code)
+        if self.swift_conf.region and self.storage_url == None:
+            raise SwiftAuthenticateError('[swift] Region \'%s\' not found.' % self.swift_conf.region)
 
     def read_object_content(self, obj_id):
         i = 0
