@@ -81,9 +81,13 @@ def get_swift_conf(cfg, section):
         use_https = cfg.getboolean(section, 'use_https')
     else:
         use_https = False
+    if cfg.has_option(section, 'region'):
+        region = cfg.get(section, 'region')
+    else:
+        region = None
 
     from seafobj.backends.swift import SwiftConf
-    conf = SwiftConf(user_name, password, container, auth_host, auth_ver, tenant, use_https)
+    conf = SwiftConf(user_name, password, container, auth_host, auth_ver, tenant, use_https, region)
     return conf
 
 class SeafileConfig(object):
