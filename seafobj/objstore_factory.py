@@ -58,9 +58,12 @@ def get_oss_conf(cfg, section):
     key_id = cfg.get(section, 'key_id')
     key = cfg.get(section, 'key')
     bucket = cfg.get(section, 'bucket')
-    region = cfg.get(section, 'region')
+    endpoint = cfg.get(section, 'endpoint')
+    if not endpoint:
+        region = cfg.get(section, 'region')
+        endpoint = 'oss-cn-%s-internal.aliyuncs.com' % region
 
-    host = 'oss-cn-%s-internal.aliyuncs.com' % region
+    host = endpoint
 
     from seafobj.backends.alioss import OSSConf
     conf = OSSConf(key_id, key, bucket, host)
