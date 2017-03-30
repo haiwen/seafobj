@@ -1,8 +1,8 @@
 from .base import AbstractObjStore
 
-from oss.oss_api import OssAPI
 from seafobj.exceptions import GetObjectError
 import httplib
+import oss2
 
 class OSSConf(object):
     def __init__(self, key_id, key, bucket_name, host):
@@ -16,17 +16,16 @@ class SeafOSSClient(object):
     def __init__(self, conf):
         self.conf = conf
         # Due to a bug in httplib we can't use https
-        self.oss = OssAPI(conf.host, conf.key_id, conf.key)
+        self.auth = oss2.Auth(conf.key_id, conf.key)
+        self.service = oss2.Service(self.auth, conf.host)
+        self.bucket = oss2.Bucket(self.auth, conf.host, conf.bucket_name)
 
     def read_object_content(self, obj_id):
-        res = self.oss.get_object(self.conf.bucket_name, obj_id)
-        if res.status != httplib.OK:
-            raise GetObjectError("Failed to get object %s from bucket %s: %s %s" % (
-                                 obj_id, self.conf.bucket_name, res.status, res.reason))
+        res = self.bucket.get_object(obj_id)
         return res.read()
 
 class SeafObjStoreOSS(AbstractObjStore):
-    '''OSS backend for seafile objecs'''
+    '''OSS backend for seafile objects'''
     def __init__(self, compressed, oss_conf, crypto=None):
         AbstractObjStore.__init__(self, compressed, crypto)
         self.oss_client = SeafOSSClient(oss_conf)
@@ -38,3 +37,28 @@ class SeafObjStoreOSS(AbstractObjStore):
 
     def get_name(self):
         return 'OSS storage backend'
+
+    def list_objs(self):
+        obj_list = []
+
+        Simp_obj_info = self.oss_client.bucket.list_objects()
+
+        for key in Simp_obj_info.object_list:
+            token = key.key.split('/')
+            if len(token) == 2:
+                repo_id = token[0]
+                obj_id = token[1]
+                obj = [repo_id, obj_id]
+                obj_list.append(obj)
+
+        return obj_list
+
+    def obj_exists(self, repo_id, obj_id):
+        key = '%s/%s' % (repo_id, obj_id)
+
+        return self.oss_client.bucket.object_exists(key)
+
+    def write_obj(self, data, repo_id, obj_id):
+        key = '%s/%s' % (repo_id, obj_id)
+
+        self.oss_client.bucket.put_object(key, data)

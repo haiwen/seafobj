@@ -64,3 +64,42 @@ class SeafObjStoreS3(AbstractObjStore):
 
     def get_name(self):
         return 'S3 storage backend'
+
+    def list_objs(self):
+        obj_list = []
+
+        if not self.s3_client.conn:
+            self.s3_client.do_connect()
+
+        keys = self.s3_client.bucket.list()
+        for key in keys:
+            tokens = key.name.split('/')
+            if len(tokens) == 2:
+                repo_id = tokens[0]
+                obj_id = tokens[1]
+                obj = [repo_id, obj_id]
+                obj_list.append(obj)
+
+        return obj_list
+
+    def obj_exists(self, repo_id, obj_id):
+        if not self.s3_client.conn or not self.s3_client.bucket:
+            self.s3_client.do_connect()
+
+        bucket = self.s3_client.bucket
+        s3_path = '%s/%s' % (repo_id, obj_id)
+        key = Key(bucket=bucket, name=s3_path)
+        exists = key.exists()
+        self.dest_key = key
+
+        return exists
+
+    def write_obj(self, data, repo_id, obj_id):
+        if not self.s3_client.conn or not self.s3_client.bucket:
+            self.s3_client.do_connect()
+
+        bucket = self.s3_client.bucket
+        s3_path = '%s/%s' % (repo_id, obj_id)
+        key = Key(bucket=bucket, name=s3_path)
+        key.set_contents_from_string(data)
+
