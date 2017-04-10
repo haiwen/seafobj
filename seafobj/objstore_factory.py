@@ -58,7 +58,9 @@ def get_oss_conf(cfg, section):
     key_id = cfg.get(section, 'key_id')
     key = cfg.get(section, 'key')
     bucket = cfg.get(section, 'bucket')
-    endpoint = cfg.get(section, 'endpoint')
+    endpoint = ''
+    if cfg.has_option(section, 'endpoint'):
+        endpoint = cfg.get(section, 'endpoint')
     if not endpoint:
         region = cfg.get(section, 'region')
         endpoint = 'oss-cn-%s-internal.aliyuncs.com' % region
