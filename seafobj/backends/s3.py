@@ -66,7 +66,6 @@ class SeafObjStoreS3(AbstractObjStore):
         return 'S3 storage backend'
 
     def list_objs(self):
-        obj_list = []
 
         if not self.s3_client.conn:
             self.s3_client.do_connect()
@@ -78,9 +77,7 @@ class SeafObjStoreS3(AbstractObjStore):
                 repo_id = tokens[0]
                 obj_id = tokens[1]
                 obj = [repo_id, obj_id]
-                obj_list.append(obj)
-
-        return obj_list
+                yield obj
 
     def obj_exists(self, repo_id, obj_id):
         if not self.s3_client.conn or not self.s3_client.bucket:

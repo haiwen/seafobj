@@ -7,6 +7,7 @@ from .base import AbstractObjStore
 
 from seafobj.utils import to_utf8
 from seafobj.utils.ceph_utils import ioctx_set_namespace
+from rados import LIBRADOS_ALL_NSPACES
 
 class CephConf(object):
     def __init__(self, ceph_conf_file, pool_name, ceph_client_id=None):
@@ -84,7 +85,12 @@ class SeafObjStoreCeph(AbstractObjStore):
         return 'Ceph storage backend'
 
     def list_objs(self):
-        return []
+        ioctx = self.ceph_client.ioctx_pool.get_ioctx(LIBRADOS_ALL_NSPACES)
+        objs = ioctx.list_objects()
+        for obj in objs:
+            yield [obj.nspace, obj.key]
+
+        self.ceph_client.ioctx_pool.return_ioctx(ioctx)
 
     def obj_exists(self, repo_id, obj_id):
         ioctx = self.ceph_client.ioctx_pool.get_ioctx(repo_id)

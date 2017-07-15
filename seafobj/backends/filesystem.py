@@ -26,7 +26,6 @@ class SeafObjStoreFS(AbstractObjStore):
         return 'filesystem storage backend'
 
     def list_objs(self):
-        obj_list = []
 
         top_path = self.obj_dir
         for repo_id in os.listdir(top_path):
@@ -36,9 +35,7 @@ class SeafObjStoreFS(AbstractObjStore):
                 for lpath in os.listdir(obj_path):
                     obj_id = spath + lpath
                     obj = [repo_id, obj_id]
-                    obj_list.append(obj)
-
-        return obj_list
+                    yield obj
 
     def obj_exists(self, repo_id, obj_id):
         dirname = self.obj_dir
