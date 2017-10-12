@@ -33,13 +33,17 @@ class SeafS3Client(object):
             else:
                 self.conn = boto.connect_s3(self.conf.key_id, self.conf.key)
         else:
-            self.conn = boto.connect_s3(
-                aws_access_key_id=self.conf.key_id,
-                aws_secret_access_key=self.conf.key,
-                port=self.conf.port,
-                host=self.conf.host,
-                is_secure=False,
-                calling_format=boto.s3.connection.OrdinaryCallingFormat())
+            if self.conf.use_v4_sig:
+                self.conn = boto.connect_s3(self.conf.key_id, self.conf.key,
+                                            host='%s' % self.conf.host)
+            else:
+                self.conn = boto.connect_s3(
+                    aws_access_key_id=self.conf.key_id,
+                    aws_secret_access_key=self.conf.key,
+                    port=self.conf.port,
+                    host=self.conf.host,
+                    is_secure=False,
+                    calling_format=boto.s3.connection.OrdinaryCallingFormat())
 
         self.bucket = self.conn.get_bucket(self.conf.bucket_name)
 
