@@ -25,19 +25,14 @@ def get_s3_conf(cfg, section):
     port = None
     if cfg.has_option(section, 'host'):
         addr = cfg.get(section, 'host')
-        if ':' not in addr:
-            raise InvalidConfigError('invalid s3 host %s' % addr)
 
         segs = addr.split(':')
-        if len(segs) != 2:
-            raise InvalidConfigError('invalid s3 host %s' % addr)
-
         host = segs[0]
 
         try:
             port = int(segs[1])
-        except ValueError:
-            raise InvalidConfigError('invalid s3 host %s' % addr)
+        except IndexError:
+            pass
 
     use_v4_sig = False
     if cfg.has_option(section, 'use_v4_signature'):
