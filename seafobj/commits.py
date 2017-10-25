@@ -28,7 +28,7 @@ class SeafCommitManager(object):
 
     def load_commit(self, repo_id, version, obj_id):
         self._counter += 1
-        data = self.obj_store.read_obj(repo_id, version, obj_id)
+        data = self.obj_store.read_obj(repo_id, version, obj_id, True)
         return self.parse_commit(data)
 
     def parse_commit(self, data):

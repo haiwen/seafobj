@@ -5,6 +5,21 @@ import binascii
 from seafobj.exceptions import InvalidConfigError
 from seafobj.backends.filesystem import SeafObjStoreFS
 
+def get_cache_host_list (cfg, section):
+    host_list = []
+    memcached_options = None
+    if cfg.has_option('memcached', 'memcached_options'):
+        memcached_options = cfg.get('memcached', 'memcached_options')
+    elif cfg.has_option(section, 'memcached_options'):
+        memcached_options = cfg.get(section, 'memcached_options')
+    if memcached_options:
+        args = memcached_options.split()
+        for arg in args:
+            if '--SERVER' in arg:
+                host = (arg.split('=')[1]).strip()
+                host_list.append(host)
+    return host_list
+
 def get_ceph_conf(cfg, section):
     config_file = cfg.get(section, 'ceph_config')
     pool_name = cfg.get(section, 'pool')
@@ -12,9 +27,11 @@ def get_ceph_conf(cfg, section):
     if cfg.has_option(section, 'ceph_client_id'):
         ceph_client_id = cfg.get(section, 'ceph_client_id')
 
+    cache_host_list = get_cache_host_list (cfg, section)
+
     from seafobj.backends.ceph import CephConf
 
-    return CephConf(config_file, pool_name, ceph_client_id)
+    return CephConf(config_file, pool_name, ceph_client_id, cache_host_list=cache_host_list)
 
 def get_s3_conf(cfg, section):
     key_id = cfg.get(section, 'key_id')
@@ -44,8 +61,10 @@ def get_s3_conf(cfg, section):
             raise InvalidConfigError('aws_region is not configured')
         aws_region = cfg.get(section, 'aws_region')
 
+    cache_host_list = get_cache_host_list (cfg, section)
+
     from seafobj.backends.s3 import S3Conf
-    conf = S3Conf(key_id, key, bucket, host, port, use_v4_sig, aws_region)
+    conf = S3Conf(key_id, key, bucket, host, port, use_v4_sig, aws_region, cache_host_list)
 
     return conf
 
@@ -62,8 +81,10 @@ def get_oss_conf(cfg, section):
 
     host = endpoint
 
+    cache_host_list = get_cache_host_list (cfg, section)
+
     from seafobj.backends.alioss import OSSConf
-    conf = OSSConf(key_id, key, bucket, host)
+    conf = OSSConf(key_id, key, bucket, host, cache_host_list)
 
     return conf
 
@@ -86,8 +107,10 @@ def get_swift_conf(cfg, section):
     else:
         region = None
 
+    cache_host_list = get_cache_host_list (cfg, section)
+
     from seafobj.backends.swift import SwiftConf
-    conf = SwiftConf(user_name, password, container, auth_host, auth_ver, tenant, use_https, region)
+    conf = SwiftConf(user_name, password, container, auth_host, auth_ver, tenant, use_https, region, cache_host_list)
     return conf
 
 class SeafileConfig(object):

@@ -3,9 +3,11 @@ from .base import AbstractObjStore
 import boto
 import boto.s3.connection
 from boto.s3.key import Key
+import pylibmc
+import logging
 
 class S3Conf(object):
-    def __init__(self, key_id, key, bucket_name, host, port, use_v4_sig, aws_region):
+    def __init__(self, key_id, key, bucket_name, host, port, use_v4_sig, aws_region, cache_host_list=None):
         self.key_id = key_id
         self.key = key
         self.bucket_name = bucket_name
@@ -13,6 +15,7 @@ class S3Conf(object):
         self.port = port
         self.use_v4_sig = use_v4_sig
         self.aws_region = aws_region
+        self.cache_host_list = cache_host_list
 
 class SeafS3Client(object):
     '''Wraps a s3 connection and a bucket'''
@@ -60,10 +63,41 @@ class SeafObjStoreS3(AbstractObjStore):
     def __init__(self, compressed, s3_conf, crypto=None):
         AbstractObjStore.__init__(self, compressed, crypto)
         self.s3_client = SeafS3Client(s3_conf)
+        self.conf = s3_conf
 
-    def read_obj_raw(self, repo_id, version, obj_id):
+        if self.conf.cache_host_list:
+            self.get_cache_client()
+        else:
+            self.cache_client = None
+
+    def get_cache_client(self):
+        self.cache_client = pylibmc.Client(self.conf.cache_host_list)
+        try:
+            self.cache_client.set('test_key', 'test_value')
+        except Exception, e:
+            logging.warning('Failed to connect memcached: %s', e)
+            self.cache_client = None
+
+    def read_obj_raw(self, repo_id, version, obj_id, use_cache):
+        data = None
+        cache_key = self.objcache_key(repo_id, obj_id)
+        if self.cache_client and use_cache:
+            try:
+                data = self.cache_client.get(cache_key)
+            except pylibmc.ConnectionError:
+                self.get_cache_client()
+                if self.cache_client:
+                    data = self.cache_client.get(cache_key)
+
+            if data:
+                return data
+
         real_obj_id = '%s/%s' % (repo_id, obj_id)
         data = self.s3_client.read_object_content(real_obj_id)
+
+        if self.cache_client and use_cache and data:
+            self.cache_client.set(cache_key, data)
+
         return data
 
     def get_name(self):
