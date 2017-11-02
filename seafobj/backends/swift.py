@@ -37,7 +37,37 @@ class SeafSwiftClient(object):
             return True
         return False
 
+    def authenticate_v1(self):
+        url = '%s/auth/%s' % (self.base_url, self.swift_conf.auth_ver)
+
+        hdr = {'X-Storage-User': self.swift_conf.user_name,
+               'X-Storage-Pass': self.swift_conf.password}
+        req = urllib2.Request(url, None, hdr)
+
+        try:
+            resp = urllib2.urlopen(req)
+        except urllib2.HTTPError as e:
+            raise SwiftAuthenticateError('[swift] Failed to authenticate: %d.' %
+                                         (SeafSwiftClient.MAX_RETRY, e.getcode()))
+        except urllib2.URLError as e:
+            raise SwiftAuthenticateError('[swift] Failed to authenticate: %s.' %
+                                         (SeafSwiftClient.MAX_RETRY, e.reason))
+
+        ret_code = resp.getcode()
+        if ret_code == httplib.OK or ret_code == httplib.NON_AUTHORITATIVE_INFORMATION:
+            self.storage_url = resp.headers['x-storage-url']
+            self.token = resp.headers['x-auth-token']
+        else:
+            raise SwiftAuthenticateError('[swift] Unexpected code when authenticate: %d' %
+                                         ret_code)
+        if self.storage_url == None:
+            raise SwiftAuthenticateError('[swift] Failed to authenticate.')
+
     def authenticate(self):
+        if self.swift_conf.auth_ver == 'v1.0':
+            self.authenticate_v1()
+            return
+
         url = '%s/%s/tokens' % (self.base_url, self.swift_conf.auth_ver)
         hdr = {'Content-Type': 'application/json'}
         auth_data = {'auth': {'passwordCredentials': {'username': self.swift_conf.user_name,
