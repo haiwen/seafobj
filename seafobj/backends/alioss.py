@@ -40,8 +40,8 @@ class SeafObjStoreOSS(AbstractObjStore):
             self.cache_client = None
 
     def get_cache_client(self):
-        self.cache_client = pylibmc.Client(self.conf.cache_host_list)
         try:
+            self.cache_client = pylibmc.Client(self.conf.cache_host_list)
             self.cache_client.set('test_key', 'test_value')
         except Exception, e:
             logging.warning('Failed to connect memcached: %s', e)
@@ -57,6 +57,8 @@ class SeafObjStoreOSS(AbstractObjStore):
                 self.get_cache_client()
                 if self.cache_client:
                     data = self.cache_client.get(cache_key)
+            except Exception, e:
+                logging.warning('Failed to read data in memcache: %s', e)
 
             if data:
                 return data
