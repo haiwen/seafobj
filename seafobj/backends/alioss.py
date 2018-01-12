@@ -3,16 +3,13 @@ from .base import AbstractObjStore
 from seafobj.exceptions import GetObjectError
 import httplib
 import oss2
-import pylibmc
-import logging
 
 class OSSConf(object):
-    def __init__(self, key_id, key, bucket_name, host, cache_host_list=None):
+    def __init__(self, key_id, key, bucket_name, host):
         self.key_id = key_id
         self.key = key
         self.bucket_name = bucket_name
         self.host = host
-        self.cache_host_list = cache_host_list
 
 class SeafOSSClient(object):
     '''Wraps a oss connection and a bucket'''
@@ -32,42 +29,10 @@ class SeafObjStoreOSS(AbstractObjStore):
     def __init__(self, compressed, oss_conf, crypto=None):
         AbstractObjStore.__init__(self, compressed, crypto)
         self.oss_client = SeafOSSClient(oss_conf)
-        self.conf = oss_conf
 
-        if self.conf.cache_host_list:
-            self.get_cache_client()
-        else:
-            self.cache_client = None
-
-    def get_cache_client(self):
-        try:
-            self.cache_client = pylibmc.Client(self.conf.cache_host_list)
-            self.cache_client.set('test_key', 'test_value')
-        except Exception, e:
-            logging.warning('Failed to connect memcached: %s', e)
-            self.cache_client = None
-
-    def read_obj_raw(self, repo_id, version, obj_id, use_cache):
-        data = None
-        cache_key = self.objcache_key(repo_id, obj_id)
-        if self.cache_client and use_cache:
-            try:
-                data = self.cache_client.get(cache_key)
-            except pylibmc.ConnectionError:
-                self.get_cache_client()
-                if self.cache_client:
-                    data = self.cache_client.get(cache_key)
-            except Exception, e:
-                logging.warning('Failed to read data in memcache: %s', e)
-
-            if data:
-                return data
-
+    def read_obj_raw(self, repo_id, version, obj_id):
         real_obj_id = '%s/%s' % (repo_id, obj_id)
         data = self.oss_client.read_object_content(real_obj_id)
-        if self.cache_client and use_cache and data:
-            self.cache_client.set(cache_key, data)
-
         return data
 
     def get_name(self):

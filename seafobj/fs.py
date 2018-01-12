@@ -172,7 +172,7 @@ class SeafFSManager(object):
         if file_id == ZERO_OBJ_ID:
             pass
         else:
-            data = self.obj_store.read_obj(store_id, version, file_id, True)
+            data = self.obj_store.read_obj(store_id, version, file_id)
             if version == 0:
                 blocks, size = self.parse_blocks_v0(data, file_id)
             elif version == 1:
@@ -189,7 +189,7 @@ class SeafFSManager(object):
         if dir_id == ZERO_OBJ_ID:
             pass
         else:
-            data = self.obj_store.read_obj(store_id, version, dir_id, True)
+            data = self.obj_store.read_obj(store_id, version, dir_id)
             if version == 0:
                 dirents = self.parse_dirents_v0(data, dir_id)
             elif version == 1:

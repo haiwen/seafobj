@@ -8,15 +8,12 @@ from .base import AbstractObjStore
 from seafobj.utils import to_utf8
 from seafobj.utils.ceph_utils import ioctx_set_namespace
 from rados import LIBRADOS_ALL_NSPACES
-import pylibmc
-import logging
 
 class CephConf(object):
-    def __init__(self, ceph_conf_file, pool_name, ceph_client_id=None, cache_host_list=None):
+    def __init__(self, ceph_conf_file, pool_name, ceph_client_id=None):
         self.pool_name = pool_name
         self.ceph_conf_file = ceph_conf_file
         self.ceph_client_id = ceph_client_id
-        self.cache_host_list = cache_host_list
 
 class IoCtxPool(object):
     '''since we need to set the namespace before read the object, we need to
@@ -79,41 +76,9 @@ class SeafObjStoreCeph(AbstractObjStore):
     def __init__(self, compressed, ceph_conf, crypto=None):
         AbstractObjStore.__init__(self, compressed, crypto)
         self.ceph_client = SeafCephClient(ceph_conf)
-        self.conf = ceph_conf
 
-        if self.conf.cache_host_list:
-            self.get_cache_client()
-        else:
-            self.cache_client = None
-
-    def get_cache_client(self):
-        try:
-            self.cache_client = pylibmc.Client(self.conf.cache_host_list)
-            self.cache_client.set('test_key', 'test_value')
-        except Exception, e:
-            logging.warning('Failed to connect memcached: %s', e)
-            self.cache_client = None
-
-    def read_obj_raw(self, repo_id, version, obj_id, use_cache=False):
-        data = None
-        cache_key = self.objcache_key(repo_id, obj_id)
-        if self.cache_client and use_cache:
-            try:
-                data = self.cache_client.get(cache_key)
-            except pylibmc.ConnectionError:
-                self.get_cache_client()
-                if self.cache_client:
-                    data = self.cache_client.get(cache_key)
-            except Exception, e:
-                logging.warning('Failed to read data in memcache: %s', e)
-
-            if data:
-                return data
-
+    def read_obj_raw(self, repo_id, version, obj_id):
         data = self.ceph_client.read_object_content(repo_id, obj_id)
-        if self.cache_client and use_cache and data:
-            self.cache_client.set(cache_key, data)
-
         return data
 
     def get_name(self):

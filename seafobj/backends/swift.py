@@ -5,11 +5,9 @@ import urllib2
 import json
 from seafobj.backends.base import AbstractObjStore
 from seafobj.exceptions import GetObjectError, SwiftAuthenticateError
-import pylibmc
-import logging
 
 class SwiftConf(object):
-    def __init__(self, user_name, password, container, auth_host, auth_ver, tenant, use_https, region, cache_host_list=None):
+    def __init__(self, user_name, password, container, auth_host, auth_ver, tenant, use_https, region):
         self.user_name = user_name
         self.password = password
         self.container = container
@@ -18,7 +16,6 @@ class SwiftConf(object):
         self.tenant = tenant
         self.use_https = use_https
         self.region = region
-        self.cache_host_list = cache_host_list
 
 class SeafSwiftClient(object):
     MAX_RETRY = 2
@@ -147,42 +144,10 @@ class SeafObjStoreSwift(AbstractObjStore):
     def __init__(self, compressed, swift_conf, crypto=None):
         AbstractObjStore.__init__(self, compressed, crypto)
         self.swift_client = SeafSwiftClient(swift_conf)
-        self.conf = swift_conf
 
-        if self.conf.cache_host_list:
-            self.get_cache_client()
-        else:
-            self.cache_client = None
-
-    def get_cache_client(self):
-        try:
-            self.cache_client = pylibmc.Client(self.conf.cache_host_list)
-            self.cache_client.set('test_key', 'test_value')
-        except Exception, e:
-            logging.warning('Failed to connect memcached: %s', e)
-            self.cache_client = None
-
-    def read_obj_raw(self, repo_id, version, obj_id, use_cache=False):
-        data = None
-        cache_key = self.objcache_key(repo_id, obj_id)
-        if self.cache_client and use_cache:
-            try:
-                data = self.cache_client.get(cache_key)
-            except pylibmc.ConnectionError:
-                self.get_cache_client()
-                if self.cache_client:
-                    data = self.cache_client.get(cache_key)
-            except Exception, e:
-                logging.warning('Failed to read data in memcache: %s', e)
-
-            if data:
-                return data
-
+    def read_obj_raw(self, repo_id, version, obj_id):
         real_obj_id = '%s/%s' % (repo_id, obj_id)
         data = self.swift_client.read_object_content(real_obj_id)
-        if self.cache_client and use_cache and data:
-            self.cache_client.set(cache_key, data)
-
         return data
 
     def get_name(self):

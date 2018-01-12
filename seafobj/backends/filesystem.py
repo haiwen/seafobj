@@ -14,7 +14,7 @@ class SeafObjStoreFS(AbstractObjStore):
         self.obj_dir = obj_dir
         self.compressed = compressed
 
-    def read_obj_raw(self, repo_id, version, obj_id, use_cache=False):
+    def read_obj_raw(self, repo_id, version, obj_id):
         path = id_to_path(os.path.join(self.obj_dir, repo_id), obj_id)
 
         with open(path, 'rb') as fp:

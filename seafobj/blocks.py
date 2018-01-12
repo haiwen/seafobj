@@ -10,7 +10,7 @@ class SeafBlockManager(object):
 
     def load_block(self, repo_id, version, obj_id):
         self._counter += 1
-        data = self.obj_store.read_obj(repo_id, version, obj_id, False)
+        data = self.obj_store.read_obj(repo_id, version, obj_id)
         return data
 
 
