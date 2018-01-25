@@ -10,8 +10,6 @@ import urlparse
 import StringIO
 import ConfigParser
 
-os.environ['SEAFILE_CONF_DIR'] = ''
-
 from seafobj.objstore_factory import SeafObjStoreFactory
 
 from seafobj.backends.filesystem import SeafObjStoreFS

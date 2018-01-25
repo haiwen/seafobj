@@ -1,12 +1,9 @@
 #coding: utf-8
 
 import os
-import unittest
 import json
+import unittest
 
-data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
-os.environ['SEAFILE_CONF_DIR'] = data_dir
-conf_path = os.path.join(data_dir, 'seafile.conf')
 
 from seafobj.objstore_factory import SeafObjStoreFactory
 
@@ -14,13 +11,18 @@ TEST_REPO_ID = '413c175b-0f7d-4616-8298-22bc147af43c'
 TEST_HEAD_COMMIT = '2b216582a86ca7ab72264c3936350363a79c6d23'
 
 class TestCrypto(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        self.data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+        self.conf_path = os.path.join(self.data_dir, 'seafile.conf')
+        unittest.TestCase.__init__(self, *args, **kwargs)
+
     def setUp(self):
-        key_path = os.path.join(data_dir, 'seaf-key.txt')
-        with open(conf_path, 'w') as fd:
+        key_path = os.path.join(self.data_dir, 'seaf-key.txt')
+        with open(self.conf_path, 'w') as fd:
             fd.write('[store_crypt]\nkey_path = %s' % key_path)
 
     def tearDown(self):
-        with open(conf_path, 'w') as fd:
+        with open(self.conf_path, 'w') as fd:
             fd.truncate(0)
 
     def test_invalid_data(self):
