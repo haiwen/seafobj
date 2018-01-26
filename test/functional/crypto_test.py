@@ -4,11 +4,11 @@ import os
 import unittest
 import json
 
-data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
-os.environ['SEAFILE_CONF_DIR'] = data_dir
-conf_path = os.path.join(data_dir, 'seafile.conf')
-
 from seafobj.objstore_factory import SeafObjStoreFactory
+
+data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+#os.environ['SEAFILE_CONF_DIR'] = data_dir
+conf_path = os.path.join(data_dir, 'seafile.conf')
 
 TEST_REPO_ID = '413c175b-0f7d-4616-8298-22bc147af43c'
 TEST_HEAD_COMMIT = '2b216582a86ca7ab72264c3936350363a79c6d23'
