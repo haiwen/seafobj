@@ -8,6 +8,7 @@ from seafobj.exceptions import ObjectFormatError
 from seafobj.utils import to_utf8
 
 from .objstore_factory import objstore_factory
+from .objstore_factory import get_repo_storage_id
 from .blocks import block_mgr
 
 ZERO_OBJ_ID = '0000000000000000000000000000000000000000'
@@ -159,7 +160,10 @@ class SeafileStream(object):
 
 class SeafFSManager(object):
     def __init__(self):
-        self.obj_store = objstore_factory.get_obj_store('fs')
+        if objstore_factory.enable_storage_classes:
+            self.obj_stores = objstore_factory.get_obj_stores('fs')
+        else:
+            self.obj_store = objstore_factory.get_obj_store('fs')
 
         self._dir_counter = 0
         self._file_counter = 0
@@ -172,7 +176,15 @@ class SeafFSManager(object):
         if file_id == ZERO_OBJ_ID:
             pass
         else:
-            data = self.obj_store.read_obj(store_id, version, file_id)
+            if not objstore_factory.enable_storage_classes:
+                data = self.obj_store.read_obj(store_id, version, file_id)
+            else:
+                storage_id = get_repo_storage_id(store_id)
+                if storage_id:
+                    data = self.obj_stores[storage_id].read_obj(store_id, version, file_id)
+                else:
+                    data = self.obj_stores['__default__'].read_obj(store_id, version, file_id)
+
             if version == 0:
                 blocks, size = self.parse_blocks_v0(data, file_id)
             elif version == 1:
@@ -189,7 +201,15 @@ class SeafFSManager(object):
         if dir_id == ZERO_OBJ_ID:
             pass
         else:
-            data = self.obj_store.read_obj(store_id, version, dir_id)
+            if not objstore_factory.enable_storage_classes:
+                data = self.obj_store.read_obj(store_id, version, dir_id)
+            else:
+                storage_id = get_repo_storage_id(store_id)
+                if storage_id:
+                    data = self.obj_stores[storage_id].read_obj(store_id, version, dir_id)
+                else:
+                    data = self.obj_stores['__default__'].read_obj(store_id, version, dir_id)
+
             if version == 0:
                 dirents = self.parse_dirents_v0(data, dir_id)
             elif version == 1:
