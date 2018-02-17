@@ -2,6 +2,7 @@ import os
 import sys
 import argparse
 import subprocess
+from subprocess import CalledProcessError
 
 
 file_path = os.path.abspath(__file__)
@@ -57,18 +58,29 @@ def run(storage):
             #args = ['pytest', '--ignore=test/functional/crypto_test.py','-sv', 'test']
             args = ['pytest', '-sv', 'test']
             try:
-                subprocess.check_call(args, env=env)
+                p = subprocess.Popen(args, env=env)
+                p.wait()
             except:
                 pass
+            if p.returncode:
+                raise CalledProcessError(p.returncode, args)
             clear()
     else:
         env = set_env(storage)
-        #args = ['pytest', '--ignore=test/functional/crypto_test.py','-sv', 'test']
         args = ['pytest', '-sv', 'test']
+        # write fake ceph conf file
+        if storage == 'fs' and os.environ.get('DRONE') == 'true':
+            if not os.path.exists("/etc/ceph"):
+                os.makedirs("/etc/ceph")
+            with open("/etc/ceph/ceph.conf", "w") as fd:
+                fd.write("[global]")
         try:
-            subprocess.check_call(args, env=env)
+            p = subprocess.Popen(args, env=env, shell=False)
+            p.wait()
         except:
             pass
+        if p.returncode:
+            raise CalledProcessError(p.returncode, args)
         clear()
 
 def main():

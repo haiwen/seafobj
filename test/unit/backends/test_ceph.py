@@ -1,10 +1,8 @@
 #coding: UTF-8
 
 import unittest
-from mock import patch, Mock, call
-from nose import SkipTest
+from mock import patch, Mock
 
-import os
 
 from seafobj.backends import ceph
 
