@@ -1,7 +1,6 @@
 pipeline:
   build:
     image: ubuntu:16.04
-    pull: true
     commands:
       - ./ci/install-deps.sh
       - python run_test.py --storage fs
