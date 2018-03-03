@@ -20,6 +20,10 @@ def prepare(storage, env):
         with open(os.path.join(conf_dir, 'ceph', 'seafile.conf')) as fr:
             with open(os.path.join(conf_dir, 'seafile.conf'), 'w') as fw:
                 fw.write(fr.read())
+    if storage == 'multi':
+        with open(os.path.join(conf_dir, 'multi-backend', 'seafile.conf')) as fr:
+            with open(os.path.join(conf_dir, 'seafile.conf'), 'w') as fw:
+                fw.write(fr.read())
 
     os.environ['SEAFILE_CONF_DIR'] = os.path.join(conf_dir)
     os.environ['CCNET_CONF_DIR'] = ''
@@ -78,7 +82,7 @@ def main():
     args = parser.parse_args()
 
     storage = 'fs' 
-    if args.storage and args.storage in ['fs', 'ceph', 'all']:
+    if args.storage and args.storage in ['fs', 'ceph', 'all', 'multi']:
         storage = args.storage
 
     run(storage)
