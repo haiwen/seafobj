@@ -6,8 +6,6 @@ import json
 
 from seafobj.exceptions import InvalidConfigError
 from seafobj.backends.filesystem import SeafObjStoreFS
-from seafobj.db import init_db_session_class
-from sqlalchemy.orm.scoping import scoped_session
 
 def get_ceph_conf(cfg, section):
     config_file = cfg.get(section, 'ceph_config')
@@ -224,6 +222,7 @@ class SeafObjStoreFactory(object):
         if cfg.has_option ('storage', 'enable_storage_classes'):
             enable_storage_classes = cfg.get('storage', 'enable_storage_classes')
             if enable_storage_classes.lower() == 'true':
+                from seafobj.db import init_db_session_class
                 self.enable_storage_classes = True
                 self.session = init_db_session_class(cfg)
                 try:
@@ -250,14 +249,16 @@ class SeafObjStoreFactory(object):
             if bend[obj_type]['backend'] == 'fs':
                 obj_dir = os.path.join(bend[obj_type]['dir'], 'storage', obj_type)
                 self.obj_stores[obj_type][storage_id] = SeafObjStoreFS(compressed, obj_dir, crypto)
-            if bend[obj_type]['backend'] == 'swift':
+            elif bend[obj_type]['backend'] == 'swift':
                 from seafobj.backends.swift import SeafObjStoreSwift
                 swift_conf = get_swift_conf_from_json(bend[obj_type])
                 self.obj_stores[obj_type][storage_id] = SeafObjStoreSwift(compressed, swift_conf, crypto)
-            if bend[obj_type]['backend'] == 's3':
+            elif bend[obj_type]['backend'] == 's3':
                 from seafobj.backends.s3 import SeafObjStoreS3
                 s3_conf = get_s3_conf_from_json(bend[obj_type])
                 self.obj_stores[obj_type][storage_id] = SeafObjStoreS3(compressed, s3_conf, crypto)
+            else:
+                raise InvalidConfigError('Unknown backend type: %s.' % bend[obj_type]['backend'])
 
             if bend.has_key('is_default') and bend['is_default']==True:
                 if self.obj_stores[obj_type].has_key('__default__'):
@@ -321,6 +322,7 @@ def get_repo_storage_id(repo_id):
         return repo_storage_id[repo_id]
     else:
         from .db import Base
+        from sqlalchemy.orm.scoping import scoped_session
         RepoStorageId = Base.classes.RepoStorageId
         storage_id = None
         session = scoped_session(objstore_factory.session)
