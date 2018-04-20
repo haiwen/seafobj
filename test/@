@@ -1,0 +1,9 @@
+from ...base import BaseTest
+
+
+class TestSeafCrypto(BaseTest):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
