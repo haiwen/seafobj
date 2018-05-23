@@ -15,6 +15,9 @@ class TestCommitDiffer(BaseTest):
         self.fst_commit = self.TEST_CEPH_LAST_COMMIT
         self.add_commit = self.TEST_CEPH_ADD_COMMIT
 
+        self.repo_id3 = self.TEST_FOLD_DIR_REPO
+        self.commit_id3 = self.TEST_FOLD_DIR_COMMIT
+
     def diff(self):
         commit = commit_mgr.load_commit(self.repo_id, self.repo_version, self.add_commit)
         parent = commit_mgr.load_commit(self.repo_id, commit.version, self.fst_commit)
@@ -93,3 +96,41 @@ class TestCommitDiffer(BaseTest):
         for th in ths:
             th.join()
         self.assertTrue(Success)
+
+    def test_diff_fold_dirs(self):
+        commit = commit_mgr.load_commit(self.repo_id3, self.repo_version, self.commit_id3)
+
+        # fold dirs #
+        differ = CommitDiffer(self.repo_id3, commit.version, '0000000000000000000000000000000000000000', commit.root_id, True, True)
+        added_files, deleted_files, added_dirs, deleted_dirs, modified_files, \
+        renamed_files, moved_files, renamed_dirs, moved_dirs = differ.diff()
+
+        added_file_names = ['/file1']
+        added_dir_names = ['/folder1']
+
+        all_files_names = [f.path for f in added_files]
+        all_dirs_names = [f.path for f in added_dirs]
+
+        self.assertTrue(len(added_file_names) == len(all_files_names))
+        self.assertTrue(len(added_dir_names) == len(all_dirs_names))
+        for i in range(len(added_file_names)):
+            self.assertTrue(added_file_names[i] == all_files_names[i])
+        for i in range(len(added_dir_names)):
+            self.assertTrue(added_dir_names[i] == all_dirs_names[i])
+
+        # don't fold dirs #
+        differ = CommitDiffer(self.repo_id3, commit.version, '0000000000000000000000000000000000000000', commit.root_id, True, False)
+        added_files, deleted_files, added_dirs, deleted_dirs, modified_files, \
+        renamed_files, moved_files, renamed_dirs, moved_dirs = differ.diff()
+
+        added_file_names = ['/file1', '/folder1/folder2/file3']
+        added_dir_names = ['/folder1', '/folder1/folder2', '/folder1/folder2/foder3']
+
+        all_files_names = [f.path for f in added_files]
+        all_dirs_names = [f.path for f in added_dirs]
+        self.assertTrue(len(added_file_names) == len(all_files_names))
+        self.assertTrue(len(added_dir_names) == len(all_dirs_names))
+        for i in range(len(added_file_names)):
+            self.assertTrue(added_file_names[i] == all_files_names[i])
+        for i in range(len(added_dir_names)):
+            self.assertTrue(added_dir_names[i] == all_dirs_names[i])
