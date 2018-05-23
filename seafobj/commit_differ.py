@@ -92,7 +92,7 @@ class CommitDiffer(object):
                 d = fs_mgr.load_seafdir(self.repo_id, self.version, dir_dent.obj_id)
                 added_files.extend([DiffEntry(make_path(dir_dent.path, dent.name), dent.id, dent.size) for dent in d.get_files_list()])
 
-                added_dirs.extend([DiffEntry(make_path(dir_dent.path, dent.name), dent.id) for dent in d.get_subdirs_list()])
+                new_dirs.extend([DiffEntry(make_path(dir_dent.path, dent.name), dent.id) for dent in d.get_subdirs_list()])
         else:
             added_dirs = new_dirs
 
