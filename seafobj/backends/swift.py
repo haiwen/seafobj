@@ -7,7 +7,7 @@ from seafobj.backends.base import AbstractObjStore
 from seafobj.exceptions import GetObjectError, SwiftAuthenticateError
 
 class SwiftConf(object):
-    def __init__(self, user_name, password, container, auth_host, auth_ver, tenant, use_https, region):
+    def __init__(self, user_name, password, container, auth_host, auth_ver, tenant, use_https, region, domain):
         self.user_name = user_name
         self.password = password
         self.container = container
@@ -16,6 +16,7 @@ class SwiftConf(object):
         self.tenant = tenant
         self.use_https = use_https
         self.region = region
+        self.domain = domain
 
 class SeafSwiftClient(object):
     MAX_RETRY = 2
@@ -34,13 +35,20 @@ class SeafSwiftClient(object):
             return True
         return False
 
+    def authenticate(self):
+        if self.swift_conf.auth_ver == 'v1.0':
+            self.authenticate_v1()
+        elif self.swift_conf.auth_ver == "v2.0":
+            self.authenticate_v2()
+        else:
+            self.authenticate_v3()
+
     def authenticate_v1(self):
         url = '%s/auth/%s' % (self.base_url, self.swift_conf.auth_ver)
 
         hdr = {'X-Storage-User': self.swift_conf.user_name,
                'X-Storage-Pass': self.swift_conf.password}
         req = urllib2.Request(url, None, hdr)
-
         try:
             resp = urllib2.urlopen(req)
         except urllib2.HTTPError as e:
@@ -60,11 +68,7 @@ class SeafSwiftClient(object):
         if self.storage_url == None:
             raise SwiftAuthenticateError('[swift] Failed to authenticate.')
 
-    def authenticate(self):
-        if self.swift_conf.auth_ver == 'v1.0':
-            self.authenticate_v1()
-            return
-
+    def authenticate_v2(self):
         url = '%s/%s/tokens' % (self.base_url, self.swift_conf.auth_ver)
         hdr = {'Content-Type': 'application/json'}
         auth_data = {'auth': {'passwordCredentials': {'username': self.swift_conf.user_name,
@@ -98,6 +102,56 @@ class SeafSwiftClient(object):
                     else:
                         self.storage_url = catalog['endpoints'][0]['publicURL']
                         return
+        else:
+            raise SwiftAuthenticateError('[swift] Unexpected code when authenticate: %d' %
+                                         ret_code)
+        if self.swift_conf.region and self.storage_url == None:
+            raise SwiftAuthenticateError('[swift] Region \'%s\' not found.' % self.swift_conf.region)
+
+    def authenticate_v3(self):
+        url = '%s/v3/auth/tokens' % self.base_url
+        hdr = {'Content-Type': 'application/json'}
+
+        if  self.swift_conf.domain:
+            domain_value = self.swift_conf.domain
+        else:
+            domain_value = 'default'
+        auth_data = {'auth': {'identity': {'methods': ['password'],
+                                           'password': {'user': {'domain': {'id': domain_value},
+                                                                 'name': self.swift_conf.user_name,
+                                                                 'password': self.swift_conf.password}}},
+                              'scope': {'project': {'domain': {'id': domain_value},
+                                                    'name': self.swift_conf.tenant}}}}
+
+        req = urllib2.Request(url, json.dumps(auth_data), hdr)
+        try:
+            resp = urllib2.urlopen(req)
+        except urllib2.HTTPError as e:
+            raise SwiftAuthenticateError('[swift] Failed to authenticate: %d.' %
+                                         (SeafSwiftClient.MAX_RETRY, e.getcode()))
+        except urllib2.URLError as e:
+            raise SwiftAuthenticateError('[swift] Failed to authenticate: %s.' %
+                                         (SeafSwiftClient.MAX_RETRY, e.reason))
+
+        ret_code = resp.getcode()
+        ret_data = resp.read()
+
+        if  ret_code == httplib.OK or ret_code == httplib.NON_AUTHORITATIVE_INFORMATION or ret_code == httplib.CREATED:
+            self.token = resp.headers['X-Subject-Token']
+            data_json = json.loads(ret_data)
+            catalogs = data_json['token']['catalog']
+            for catalog in catalogs:
+                if catalog['type'] == 'object-store':
+                    if self.swift_conf.region:
+                        for endpoint in catalog['endpoints']:
+                            if endpoint['region'] == self.swift_conf.region and endpoint['interface'] == 'public':
+                                self.storage_url = endpoint['url']
+                                return
+                    else:
+                        for endpoint in catalog['endpoints']:
+                            if endpoint ['interface'] == 'public':
+                                self.storage_url = endpoint['url']
+                                return
         else:
             raise SwiftAuthenticateError('[swift] Unexpected code when authenticate: %d' %
                                          ret_code)
