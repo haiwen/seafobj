@@ -123,9 +123,13 @@ def get_swift_conf(cfg, section):
         region = cfg.get(section, 'region')
     else:
         region = None
+    if cfg.has_option(section, 'domain'):
+        domain = cfg.get(section, 'domain')
+    else:
+        domain = 'default'
 
     from seafobj.backends.swift import SwiftConf
-    conf = SwiftConf(user_name, password, container, auth_host, auth_ver, tenant, use_https, region)
+    conf = SwiftConf(user_name, password, container, auth_host, auth_ver, tenant, use_https, region, domain)
     return conf
 
 def get_swift_conf_from_json (cfg):
@@ -149,8 +153,13 @@ def get_swift_conf_from_json (cfg):
         region = cfg['region']
     else:
         region = None
+    if cfg.has_key('domain'):
+        domain = cfg['domain']
+    else:
+        domain = 'default'
+
     from seafobj.backends.swift import SwiftConf
-    conf = SwiftConf(user_name, password, container, auth_host, auth_ver, tenant, use_https, region)
+    conf = SwiftConf(user_name, password, container, auth_host, auth_ver, tenant, use_https, region, domain)
     return conf
 
 class SeafileConfig(object):
