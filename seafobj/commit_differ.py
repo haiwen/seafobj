@@ -1,10 +1,10 @@
-#coding: UTF-8
+# coding: UTF-8
 
 from seafobj import fs_mgr
 import os
-import logging
 
 ZERO_OBJ_ID = '0000000000000000000000000000000000000000'
+
 
 class DiffEntry(object):
     def __init__(self, path, obj_id, size=-1, new_path=None):
@@ -21,6 +21,19 @@ class CommitDiffer(object):
         self.root2 = root2
         self.handle_rename = handle_rename
         self.fold_dirs = fold_dirs
+
+    def diff_to_unicode(self):
+        # you can also do this by overwriting key points
+        res = []
+        diff_res = self.diff()
+        for dirents in diff_res:
+            for dirent in dirents:
+                for key in dirent.__dict__.keys():
+                    v = dirent.__dict__[key]
+                    if isinstance(v, str):
+                        dirent.__dict__[key] = v.decode('utf8')
+            res.append(dirents)
+        return tuple(res)
 
     def diff(self):
         added_files = []
