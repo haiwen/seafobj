@@ -113,7 +113,13 @@ class CommitDiffer(object):
             ret_added_files = []
             ret_added_dirs = []
 
-            del_file_dict = {de.obj_id: de for de in deleted_files}
+            # If an empty file or dir is generated from renaming or moving, just add it into both added_files
+            # and deleted_files, because we can't know where it actually come from.
+            del_file_dict = {}
+            for de in deleted_files:
+                if de.obj_id != ZERO_OBJ_ID:
+                    del_file_dict[de.obj_id] = de
+
             for de in added_files:
                 if de.obj_id in del_file_dict:
                     del_de = del_file_dict[de.obj_id]
@@ -126,7 +132,11 @@ class CommitDiffer(object):
                 else:
                     ret_added_files.append(de)
 
-            del_dir_dict = {de.obj_id: de for de in deleted_dirs}
+            del_dir_dict = {}
+            for de in deleted_dirs:
+                if de.obj_id != ZERO_OBJ_ID:
+                    del_dir_dict[de.obj_id] = de
+
             for de in added_dirs:
                 if de.obj_id in del_dir_dict:
                     del_de = del_dir_dict[de.obj_id]
@@ -138,12 +148,16 @@ class CommitDiffer(object):
                 else:
                     ret_added_dirs.append(de)
 
-            added_files = ret_added_files
-            added_dirs = ret_added_dirs
-            deleted_files = del_file_dict.values()
-            deleted_dirs = del_dir_dict.values()
+            ret_deleted_files = del_file_dict.values()
+            ret_deleted_dirs = del_dir_dict.values()
+            for de in deleted_files:
+                if de.obj_id == ZERO_OBJ_ID:
+                    ret_deleted_files.append(de)
+            for de in deleted_dirs:
+                if de.obj_id == ZERO_OBJ_ID:
+                    ret_deleted_dirs.append(de)
 
-        return (added_files, deleted_files, added_dirs, deleted_dirs,
+        return (ret_added_files, ret_deleted_files, ret_added_dirs, ret_deleted_dirs,
                 modified_files, renamed_files, moved_files,
                 renamed_dirs, moved_dirs)
 
