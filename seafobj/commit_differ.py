@@ -156,6 +156,11 @@ class CommitDiffer(object):
             for de in deleted_dirs:
                 if de.obj_id == ZERO_OBJ_ID:
                     ret_deleted_dirs.append(de)
+        else:
+            ret_added_files = added_files
+            ret_deleted_files = deleted_files
+            ret_added_dirs = added_dirs
+            ret_deleted_dirs = deleted_dirs
 
         return (ret_added_files, ret_deleted_files, ret_added_dirs, ret_deleted_dirs,
                 modified_files, renamed_files, moved_files,
