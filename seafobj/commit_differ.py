@@ -47,6 +47,7 @@ class CommitDiffer(object):
         moved_dirs = []
 
         new_dirs = []
+        del_dirs = []
         queued_dirs = [] # (path, dir_id1, dir_id2)
 
         if self.root1 == self.root2:
@@ -82,7 +83,7 @@ class CommitDiffer(object):
             for dent in dir1.get_subdirs_list():
                 new_dent = dir2.lookup_dent(dent.name)
                 if not new_dent or new_dent.type != dent.type:
-                    deleted_dirs.append(DiffEntry(make_path(path, dent.name), dent.id))
+                    del_dirs.append(DiffEntry(make_path(path, dent.name), dent.id))
                 else:
                     dir2.remove_entry(dent.name)
                     if new_dent.id == dent.id:
@@ -96,7 +97,6 @@ class CommitDiffer(object):
             while True:
                 # Process newly added dirs and its sub-dirs, all files under
                 # these dirs should be marked as added.
-                path = obj_id = None
                 try:
                     dir_dent = new_dirs.pop(0)
                     added_dirs.append(DiffEntry(dir_dent.path, dir_dent.obj_id))
@@ -106,7 +106,20 @@ class CommitDiffer(object):
                 added_files.extend([DiffEntry(make_path(dir_dent.path, dent.name), dent.id, dent.size) for dent in d.get_files_list()])
 
                 new_dirs.extend([DiffEntry(make_path(dir_dent.path, dent.name), dent.id) for dent in d.get_subdirs_list()])
+
+            while True:
+                try:
+                    dir_dent = del_dirs.pop(0)
+                    deleted_dirs.append(DiffEntry(dir_dent.path, dir_dent.obj_id))
+                except IndexError:
+                    break
+                d = fs_mgr.load_seafdir(self.repo_id, self.version, dir_dent.obj_id)
+                deleted_files.extend([DiffEntry(make_path(dir_dent.path, dent.name), dent.id, dent.size) for dent in d.get_files_list()])
+
+                del_dirs.extend([DiffEntry(make_path(dir_dent.path, dent.name), dent.id) for dent in d.get_subdirs_list()])
+
         else:
+            deleted_dirs = del_dirs
             added_dirs = new_dirs
 
         if self.handle_rename:
