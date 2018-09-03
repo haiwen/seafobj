@@ -194,7 +194,7 @@ class SeafFSManager(object):
 
         return SeafFile(store_id, version, file_id, blocks, size)
 
-    def load_seafdir(self, store_id, version, dir_id):
+    def load_seafdir(self, store_id, version, dir_id, ret_unicode=False):
         self._dir_counter += 1
 
         dirents = {}
@@ -213,7 +213,7 @@ class SeafFSManager(object):
             if version == 0:
                 dirents = self.parse_dirents_v0(data, dir_id)
             elif version == 1:
-                dirents = self.parse_dirents_v1(data, dir_id)
+                dirents = self.parse_dirents_v1(data, dir_id, ret_unicode)
             else:
                 raise RuntimeError('invalid fs version ' + str(version))
 
@@ -248,7 +248,7 @@ class SeafFSManager(object):
 
         return dirents
 
-    def parse_dirents_v1(self, data, dir_id):
+    def parse_dirents_v1(self, data, dir_id, ret_unicode=False):
         '''json format'''
         d = json.loads(data)
 
@@ -268,7 +268,11 @@ class SeafFSManager(object):
             else:
                 continue
 
-            dirents[to_utf8(name)] = SeafDirent.fromV1(to_utf8(name), type, to_utf8(id), mtime, size)
+            if not ret_unicode:
+                name = to_utf8(name)
+                id = to_utf8(id)
+
+            dirents[name] = SeafDirent.fromV1(name, type, id, mtime, size)
 
         return dirents
 

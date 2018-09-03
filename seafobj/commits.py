@@ -30,7 +30,7 @@ class SeafCommitManager(object):
     def read_count(self):
         return self._counter
 
-    def load_commit(self, repo_id, version, obj_id):
+    def load_commit(self, repo_id, version, obj_id, ret_unicode=False):
         self._counter += 1
         if not objstore_factory.enable_storage_classes:
             data = self.obj_store.read_obj(repo_id, version, obj_id)
@@ -40,12 +40,16 @@ class SeafCommitManager(object):
                 data = self.obj_stores[storage_id].read_obj(repo_id, version, obj_id)
             else:
                 data = self.obj_stores['__default__'].read_obj(repo_id, version, obj_id)
-        return self.parse_commit(data)
 
-    def parse_commit(self, data):
-        dict = json.loads(data)
+        return self.parse_commit(data, ret_unicode)
+
+    def parse_commit(self, data, ret_unicode=False):
+        commit_dict = json.loads(data)
+        if ret_unicode:
+            return SeafCommit(commit_dict)
+
         d = {}
-        for k, v in dict.iteritems():
+        for k, v in commit_dict.iteritems():
             d[to_utf8(k)] = v
         return SeafCommit(d)
 
