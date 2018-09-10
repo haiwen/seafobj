@@ -25,7 +25,7 @@ class SeafObjStoreFS(AbstractObjStore):
     def get_name(self):
         return 'filesystem storage backend'
 
-    def list_objs(self):
+    def list_objs(self, repo_id=None):
 
         top_path = self.obj_dir
         for repo_id in os.listdir(top_path):

@@ -38,15 +38,19 @@ class SeafObjStoreOSS(AbstractObjStore):
     def get_name(self):
         return 'OSS storage backend'
 
-    def list_objs(self):
-        Simp_obj_info = self.oss_client.bucket.list_objects()
+    def list_objs(self, repo_id=None):
+        if  repo_id != None:
+            Simp_obj_info = self.oss_client.bucket.list_objects(repo_id)
+        else:
+            Simp_obj_info = self.oss_client.bucket.list_objects()
 
         for key in Simp_obj_info.object_list:
             token = key.key.split('/')
             if len(token) == 2:
                 repo_id = token[0]
                 obj_id = token[1]
-                obj = [repo_id, obj_id]
+                size = key.size
+                obj = [repo_id, obj_id, size]
                 yield obj
 
     def obj_exists(self, repo_id, obj_id):

@@ -69,7 +69,7 @@ class SeafObjStoreS3(AbstractObjStore):
     def get_name(self):
         return 'S3 storage backend'
 
-    def list_objs(self):
+    def list_objs(self, repo_id=None):
 
         if not self.s3_client.conn:
             self.s3_client.do_connect()
