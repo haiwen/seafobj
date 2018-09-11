@@ -28,7 +28,7 @@ class AbstractObjStore(object):
         '''Get the backend name for display in the log'''
         raise NotImplementedError
 
-    def list_objs(self):
+    def list_objs(self, repo_id=None):
         '''List all objects'''
         raise NotImplementedError
 

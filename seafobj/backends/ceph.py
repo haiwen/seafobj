@@ -84,7 +84,7 @@ class SeafObjStoreCeph(AbstractObjStore):
     def get_name(self):
         return 'Ceph storage backend'
 
-    def list_objs(self):
+    def list_objs(self, repo_id=None):
         ioctx = self.ceph_client.ioctx_pool.get_ioctx(LIBRADOS_ALL_NSPACES)
         objs = ioctx.list_objects()
         for obj in objs:
