@@ -80,7 +80,7 @@ class SeafObjStoreS3(AbstractObjStore):
             if len(tokens) == 2:
                 repo_id = tokens[0]
                 obj_id = tokens[1]
-                obj = [repo_id, obj_id]
+                obj = [repo_id, obj_id, 0]
                 yield obj
 
     def obj_exists(self, repo_id, obj_id):
