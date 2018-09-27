@@ -34,7 +34,7 @@ class SeafObjStoreFS(AbstractObjStore):
                 obj_path = os.path.join(repo_path, spath)
                 for lpath in os.listdir(obj_path):
                     obj_id = spath + lpath
-                    obj = [repo_id, obj_id]
+                    obj = [repo_id, obj_id, 0]
                     yield obj
 
     def obj_exists(self, repo_id, obj_id):

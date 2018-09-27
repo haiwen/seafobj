@@ -88,7 +88,7 @@ class SeafObjStoreCeph(AbstractObjStore):
         ioctx = self.ceph_client.ioctx_pool.get_ioctx(LIBRADOS_ALL_NSPACES)
         objs = ioctx.list_objects()
         for obj in objs:
-            yield [obj.nspace, obj.key]
+            yield [obj.nspace, obj.key, 0]
 
         self.ceph_client.ioctx_pool.return_ioctx(ioctx)
 
