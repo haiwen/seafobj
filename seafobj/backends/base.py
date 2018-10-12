@@ -1,6 +1,7 @@
 #coding: UTF-8
 
 import zlib
+from seafobj.exceptions import GetObjectError
 
 class AbstractObjStore(object):
     '''Base class of seafile object backend'''
@@ -9,11 +10,14 @@ class AbstractObjStore(object):
         self.crypto = crypto
 
     def read_obj(self, repo_id, version, obj_id):
-        data = self.read_obj_raw(repo_id, version, obj_id)
-        if self.crypto:
-            data = self.crypto.dec_data(data)
-        if self.compressed and version == 1:
-            data = zlib.decompress(data)
+        try:
+            data = self.read_obj_raw(repo_id, version, obj_id)
+            if self.crypto:
+                data = self.crypto.dec_data(data)
+            if self.compressed and version == 1:
+                data = zlib.decompress(data)
+        except Exception as e:
+            raise GetObjectError('Failed to read object %s/%s: %s' % (repo_id, obj_id, e))
 
         return data
 
