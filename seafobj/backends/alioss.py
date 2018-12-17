@@ -4,6 +4,14 @@ from seafobj.exceptions import GetObjectError
 import httplib
 import oss2
 
+# set log level to WARNING
+# the api set_file_logger exists after oss2 2.6.0, which has a lot of 'INFO' log
+try:
+    log_file_path = "log.log"
+    oss2.set_file_logger(log_file_path, 'oss2', logging.WARNING)
+except:
+    pass
+
 class OSSConf(object):
     def __init__(self, key_id, key, bucket_name, host):
         self.key_id = key_id
