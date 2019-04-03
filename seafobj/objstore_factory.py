@@ -79,7 +79,7 @@ def get_s3_conf_from_json(cfg):
             pass
     use_v4_sig = False
     if cfg.has_key('use_v4_signature'):
-        use_v4_sig = cfg['use_v4_signature'].lower() == 'true'
+        use_v4_sig = cfg['use_v4_signature']
 
     aws_region = None
     if use_v4_sig:
@@ -89,11 +89,11 @@ def get_s3_conf_from_json(cfg):
 
     use_https = False
     if cfg.has_key('use_https'):
-        use_https = cfg['use_https'].lower() == 'true'
+        use_https = cfg['use_https']
 
     path_style_request = False
     if cfg.has_key('path_style_request'):
-        path_style_request = cfg['path_style_request'].lower() == 'true'
+        path_style_request = cfg['path_style_request']
 
     from seafobj.backends.s3 import S3Conf
     conf = S3Conf(key_id, key, bucket, host, port, use_v4_sig, aws_region, use_https, path_style_request)
@@ -161,7 +161,7 @@ def get_swift_conf_from_json (cfg):
         tenant = cfg['tenant']
     else:
         tenant = None
-    if cfg.has_key('use_https') and cfg['use_https'].lower() == 'true':
+    if cfg.has_key('use_https') and cfg['use_https']:
         use_https = True
     else:
         use_https = False
