@@ -5,10 +5,10 @@ from mock import patch, Mock
 from nose import SkipTest
 
 import os
-import Queue
-import urlparse
-import StringIO
-import ConfigParser
+import queue
+import urllib.parse
+import io
+import configparser
 
 #os.environ['SEAFILE_CONF_DIR'] = ''
 
@@ -99,10 +99,10 @@ tenant = adminTenant
 
 class FakeSeafileConfig(object):
     def __init__(self, content):
-        self.cfg = ConfigParser.ConfigParser()
+        self.cfg = configparser.ConfigParser()
 
-        buf = StringIO.StringIO(content)
-        self.cfg.readfp(buf)
+        buf = io.StringIO(content)
+        self.cfg.read_file(buf)
 
     def get_config_parser(self):
         return self.cfg

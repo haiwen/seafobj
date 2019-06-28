@@ -1,7 +1,7 @@
 from .base import AbstractObjStore
 
 from seafobj.exceptions import GetObjectError
-import httplib
+import http.client
 import oss2
 
 # set log level to WARNING

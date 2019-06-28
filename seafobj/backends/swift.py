@@ -1,7 +1,7 @@
 #coding: utf-8
 
-import httplib
-import urllib2
+import http.client
+import urllib.request, urllib.error, urllib.parse
 import json
 from seafobj.backends.base import AbstractObjStore
 from seafobj.exceptions import GetObjectError, SwiftAuthenticateError
@@ -48,18 +48,18 @@ class SeafSwiftClient(object):
 
         hdr = {'X-Storage-User': self.swift_conf.user_name,
                'X-Storage-Pass': self.swift_conf.password}
-        req = urllib2.Request(url, None, hdr)
+        req = urllib.request.Request(url, None, hdr)
         try:
-            resp = urllib2.urlopen(req)
-        except urllib2.HTTPError as e:
+            resp = urllib.request.urlopen(req)
+        except urllib.error.HTTPError as e:
             raise SwiftAuthenticateError('[swift] Failed to authenticate: %d.' %
                                          (SeafSwiftClient.MAX_RETRY, e.getcode()))
-        except urllib2.URLError as e:
+        except urllib.error.URLError as e:
             raise SwiftAuthenticateError('[swift] Failed to authenticate: %s.' %
                                          (SeafSwiftClient.MAX_RETRY, e.reason))
 
         ret_code = resp.getcode()
-        if ret_code == httplib.OK or ret_code == httplib.NON_AUTHORITATIVE_INFORMATION:
+        if ret_code == http.client.OK or ret_code == http.client.NON_AUTHORITATIVE_INFORMATION:
             self.storage_url = resp.headers['x-storage-url']
             self.token = resp.headers['x-auth-token']
         else:
@@ -75,20 +75,20 @@ class SeafSwiftClient(object):
                                                       'password': self.swift_conf.password},
                               'tenantName': self.swift_conf.tenant}}
 
-        req = urllib2.Request(url, json.dumps(auth_data), hdr)
+        req = urllib.request.Request(url, json.dumps(auth_data), hdr)
         try:
-            resp = urllib2.urlopen(req)
-        except urllib2.HTTPError as e:
+            resp = urllib.request.urlopen(req)
+        except urllib.error.HTTPError as e:
             raise SwiftAuthenticateError('[swift] Failed to authenticate: %d.' %
                                          (SeafSwiftClient.MAX_RETRY, e.getcode()))
-        except urllib2.URLError as e:
+        except urllib.error.URLError as e:
             raise SwiftAuthenticateError('[swift] Failed to authenticate: %s.' %
                                          (SeafSwiftClient.MAX_RETRY, e.reason))
 
         ret_code = resp.getcode()
         ret_data = resp.read()
 
-        if ret_code == httplib.OK or ret_code == httplib.NON_AUTHORITATIVE_INFORMATION:
+        if ret_code == http.client.OK or ret_code == http.client.NON_AUTHORITATIVE_INFORMATION:
             data_json = json.loads(ret_data)
             self.token = data_json['access']['token']['id']
             catalogs = data_json['access']['serviceCatalog']
@@ -123,20 +123,20 @@ class SeafSwiftClient(object):
                               'scope': {'project': {'domain': {'id': domain_value},
                                                     'name': self.swift_conf.tenant}}}}
 
-        req = urllib2.Request(url, json.dumps(auth_data), hdr)
+        req = urllib.request.Request(url, json.dumps(auth_data), hdr)
         try:
-            resp = urllib2.urlopen(req)
-        except urllib2.HTTPError as e:
+            resp = urllib.request.urlopen(req)
+        except urllib.error.HTTPError as e:
             raise SwiftAuthenticateError('[swift] Failed to authenticate: %d.' %
                                          (SeafSwiftClient.MAX_RETRY, e.getcode()))
-        except urllib2.URLError as e:
+        except urllib.error.URLError as e:
             raise SwiftAuthenticateError('[swift] Failed to authenticate: %s.' %
                                          (SeafSwiftClient.MAX_RETRY, e.reason))
 
         ret_code = resp.getcode()
         ret_data = resp.read()
 
-        if  ret_code == httplib.OK or ret_code == httplib.NON_AUTHORITATIVE_INFORMATION or ret_code == httplib.CREATED:
+        if  ret_code == http.client.OK or ret_code == http.client.NON_AUTHORITATIVE_INFORMATION or ret_code == http.client.CREATED:
             self.token = resp.headers['X-Subject-Token']
             data_json = json.loads(ret_data)
             catalogs = data_json['token']['catalog']
@@ -166,12 +166,12 @@ class SeafSwiftClient(object):
 
             url = '%s/%s/%s' % (self.storage_url, self.swift_conf.container, obj_id)
             hdr = {'X-Auth-Token': self.token}
-            req = urllib2.Request(url, headers=hdr)
+            req = urllib.request.Request(url, headers=hdr)
             try:
-                resp = urllib2.urlopen(req)
-            except urllib2.HTTPError as e:
+                resp = urllib.request.urlopen(req)
+            except urllib.error.HTTPError as e:
                 err_code = e.getcode()
-                if err_code == httplib.UNAUTHORIZED:
+                if err_code == http.client.UNAUTHORIZED:
                     # Reset token and storage_url
                     self.token = None
                     self.storage_url = None
@@ -179,13 +179,13 @@ class SeafSwiftClient(object):
                     continue
                 else:
                     raise GetObjectError('[swift] Failed to read %s: %d' % (obj_id, err_code))
-            except urllib2.URLError as e:
+            except urllib.error.URLError as e:
                 raise GetObjectError('[swift] Failed to read %s: %s' % (obj_id, e.reason))
 
             ret_code = resp.getcode()
             ret_data = resp.read()
 
-            if ret_code == httplib.OK:
+            if ret_code == http.client.OK:
                 return ret_data
             else:
                 raise GetObjectError('[swift] Unexpected code when read %s: %d' %

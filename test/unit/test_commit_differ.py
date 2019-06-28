@@ -47,7 +47,7 @@ class TestCommitDiffer(BaseTest):
         renamed_files, moved_files, renamed_dirs, moved_dirs = differ.diff()
 
         self.assertTrue(len(deleted_files) > 0)
-        self.assertEquals(deleted_files[0].path, '/create_deleted_file.md')
+        self.assertEqual(deleted_files[0].path, '/create_deleted_file.md')
 
         self.assertTrue(len(modified_files) > 0)
         self.assertEqual(modified_files[0].path, '/create_modified_files.md')
@@ -59,13 +59,13 @@ class TestCommitDiffer(BaseTest):
         self.assertEqual(moved_files[0].path, '/create_moved_file.md')
 
         self.assertTrue(len(deleted_dirs) > 0)
-        self.assertEquals(deleted_dirs[0].path, '/create_deleted_folder')
+        self.assertEqual(deleted_dirs[0].path, '/create_deleted_folder')
 
         self.assertTrue(len(renamed_dirs) > 0)
-        self.assertEquals(renamed_dirs[0].path, '/create_renamed_folder')
+        self.assertEqual(renamed_dirs[0].path, '/create_renamed_folder')
 
         self.assertTrue(len(moved_dirs) > 0)
-        self.assertEquals(moved_dirs[0].path, '/create_moved_folder')
+        self.assertEqual(moved_dirs[0].path, '/create_moved_folder')
 
         #strs = ['added_files', 'deleted_files', 'added_dirs', 'deleted_dirs', 'modified_files', \
         #'renamed_files', 'moved_files', 'renamed_dirs', 'moved_dirs']
@@ -102,7 +102,7 @@ class TestCommitDiffer(BaseTest):
         renamed_files, moved_files, renamed_dirs, moved_dirs = differ.diff()
 
         self.assertTrue(len(deleted_files) > 0)
-        self.assertEquals(deleted_files[0].path, '/create_deleted_file.md')
+        self.assertEqual(deleted_files[0].path, '/create_deleted_file.md')
 
         self.assertTrue(len(modified_files) > 0)
         self.assertEqual(modified_files[0].path, '/create_modified_files.md')
@@ -114,13 +114,13 @@ class TestCommitDiffer(BaseTest):
         self.assertEqual(moved_files[0].path, '/create_moved_file.md')
 
         self.assertTrue(len(deleted_dirs) > 0)
-        self.assertEquals(deleted_dirs[0].path, '/create_deleted_folder')
+        self.assertEqual(deleted_dirs[0].path, '/create_deleted_folder')
 
         self.assertTrue(len(renamed_dirs) > 0)
-        self.assertEquals(renamed_dirs[0].path, '/create_renamed_folder')
+        self.assertEqual(renamed_dirs[0].path, '/create_renamed_folder')
 
         self.assertTrue(len(moved_dirs) > 0)
-        self.assertEquals(moved_dirs[0].path, '/create_moved_folder')
+        self.assertEqual(moved_dirs[0].path, '/create_moved_folder')
 
         #strs = ['added_files', 'deleted_files', 'added_dirs', 'deleted_dirs', 'modified_files', \
         #'renamed_files', 'moved_files', 'renamed_dirs', 'moved_dirs']

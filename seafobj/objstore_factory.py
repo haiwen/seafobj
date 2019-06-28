@@ -1,5 +1,5 @@
 import os
-import ConfigParser
+import configparser
 import binascii
 import logging
 import json
@@ -67,7 +67,7 @@ def get_s3_conf_from_json(cfg):
     host = None
     port = None
 
-    if cfg.has_key('host'):
+    if 'host' in cfg:
         addr = cfg['host']
 
         segs = addr.split(':')
@@ -78,21 +78,21 @@ def get_s3_conf_from_json(cfg):
         except IndexError:
             pass
     use_v4_sig = False
-    if cfg.has_key('use_v4_signature'):
+    if 'use_v4_signature' in cfg:
         use_v4_sig = cfg['use_v4_signature']
 
     aws_region = None
     if use_v4_sig:
-        if not cfg.has_key('aws_region'):
+        if 'aws_region' not in cfg:
             raise InvalidConfigError('aws_region is not configured')
         aws_region = cfg('aws_region')
 
     use_https = False
-    if cfg.has_key('use_https'):
+    if 'use_https' in cfg:
         use_https = cfg['use_https']
 
     path_style_request = False
-    if cfg.has_key('path_style_request'):
+    if 'path_style_request' in cfg:
         path_style_request = cfg['path_style_request']
 
     from seafobj.backends.s3 import S3Conf
@@ -153,7 +153,7 @@ def get_swift_conf_from_json (cfg):
     password = cfg['password']
     container = cfg['container']
     auth_host = cfg['auth_host']
-    if not cfg.has_key('auth_ver'):
+    if 'auth_ver' not in cfg:
         auth_ver = 'v2.0'
     else:
         auth_ver = cfg['auth_ver']
@@ -161,15 +161,15 @@ def get_swift_conf_from_json (cfg):
         tenant = cfg['tenant']
     else:
         tenant = None
-    if cfg.has_key('use_https') and cfg['use_https']:
+    if 'use_https' in cfg and cfg['use_https']:
         use_https = True
     else:
         use_https = False
-    if cfg.has_key('region'):
+    if 'region' in cfg:
         region = cfg['region']
     else:
         region = None
-    if cfg.has_key('domain'):
+    if 'domain' in cfg:
         domain = cfg['domain']
     else:
         domain = 'default'
@@ -189,10 +189,10 @@ class SeafileConfig(object):
 
     def get_config_parser(self):
         if self.cfg is None:
-            self.cfg = ConfigParser.ConfigParser()
+            self.cfg = configparser.ConfigParser()
             try:
                 self.cfg.read(self.seafile_conf)
-            except Exception, e:
+            except Exception as e:
                 raise InvalidConfigError(str(e))
         return self.cfg
 
@@ -203,7 +203,7 @@ class SeafileConfig(object):
         if not os.path.exists(key_path):
             raise InvalidConfigError('key file %s doesn\'t exist' % key_path)
 
-        key_config = ConfigParser.ConfigParser()
+        key_config = configparser.ConfigParser()
         key_config.read(key_path)
         if not key_config.has_option('store_crypt', 'enc_key') or not \
            key_config.has_option('store_crypt', 'enc_iv'):
@@ -285,8 +285,8 @@ class SeafObjStoreFactory(object):
             else:
                 raise InvalidConfigError('Unknown backend type: %s.' % bend[obj_type]['backend'])
 
-            if bend.has_key('is_default') and bend['is_default']==True:
-                if self.obj_stores[obj_type].has_key('__default__'):
+            if 'is_default' in bend and bend['is_default']==True:
+                if '__default__' in self.obj_stores[obj_type]:
                     raise InvalidConfigError('Only one default backend can be set.')
                 self.obj_stores[obj_type]['__default__'] = self.obj_stores[obj_type][storage_id]
 
@@ -343,7 +343,7 @@ objstore_factory = SeafObjStoreFactory()
 repo_storage_id = {}
 
 def get_repo_storage_id(repo_id):
-    if repo_storage_id.has_key(repo_id):
+    if repo_id in repo_storage_id:
         return repo_storage_id[repo_id]
     else:
         from .db import Base

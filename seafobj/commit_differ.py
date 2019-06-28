@@ -28,7 +28,7 @@ class CommitDiffer(object):
         diff_res = self.diff()
         for dirents in diff_res:
             for dirent in dirents:
-                for key in dirent.__dict__.keys():
+                for key in list(dirent.__dict__.keys()):
                     v = dirent.__dict__[key]
                     if isinstance(v, str):
                         dirent.__dict__[key] = v.decode('utf8')
@@ -161,8 +161,8 @@ class CommitDiffer(object):
                 else:
                     ret_added_dirs.append(de)
 
-            ret_deleted_files = del_file_dict.values()
-            ret_deleted_dirs = del_dir_dict.values()
+            ret_deleted_files = list(del_file_dict.values())
+            ret_deleted_dirs = list(del_dir_dict.values())
             for de in deleted_files:
                 if de.obj_id == ZERO_OBJ_ID:
                     ret_deleted_files.append(de)

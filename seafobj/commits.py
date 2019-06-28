@@ -1,6 +1,5 @@
 from .objstore_factory import objstore_factory
 from .objstore_factory import get_repo_storage_id
-from seafobj.utils import to_utf8
 
 try:
     import json
@@ -30,7 +29,7 @@ class SeafCommitManager(object):
     def read_count(self):
         return self._counter
 
-    def load_commit(self, repo_id, version, obj_id, ret_unicode=False):
+    def load_commit(self, repo_id, version, obj_id):
         self._counter += 1
         if not objstore_factory.enable_storage_classes:
             data = self.obj_store.read_obj(repo_id, version, obj_id)
@@ -41,18 +40,15 @@ class SeafCommitManager(object):
             else:
                 data = self.obj_stores['__default__'].read_obj(repo_id, version, obj_id)
 
-        return self.parse_commit(data, ret_unicode)
+        return self.parse_commit(data)
 
-    def parse_commit(self, data, ret_unicode=False):
-        commit_dict = json.loads(data)
-        if ret_unicode:
-            return SeafCommit(commit_dict)
-
-        d = {}
-        for k, v in commit_dict.iteritems():
-            d[to_utf8(k)] = v
-        return SeafCommit(d)
-
+    def parse_commit(self, data): 
+        commit_dict = {}
+        if data:
+            commit_dict = json.loads(data)
+       
+        return SeafCommit(commit_dict)
+        
     def is_commit_encrypted(self, repo_id, version, commit_id):
         commit = self.load_commit(repo_id, version, commit_id)
         return getattr(commit, 'encrypted', False)

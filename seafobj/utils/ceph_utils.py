@@ -10,9 +10,6 @@ def ioctx_set_namespace(ioctx, namespace):
 
     '''
     ioctx.require_ioctx_open()
-    if isinstance(namespace, unicode):
-        namespace = namespace.encode('UTF-8')
-
     if not isinstance(namespace, str):
         raise TypeError('namespace must be a string')
 

@@ -18,23 +18,23 @@ class TestSeafBlockManager(BaseTest):
 
     def load_block(self):
         seafblk = block_mgr.load_block(self.repo_id, 1, self.new_bkid)
-        self.assertIn('this is new file.', seafblk)
+        self.assertIn(b'this is new file.', seafblk)
         seafblk = block_mgr.load_block(self.repo_id, 1, self.modified_bkid)
-        self.assertIn('this is modified file', seafblk)
+        self.assertIn(b'this is modified file', seafblk)
         seafblk = block_mgr.load_block(self.repo_id, 1, self.renamed_bkid)
-        self.assertIn('this is renamed file.', seafblk)
+        self.assertIn(b'this is renamed file.', seafblk)
         seafblk = block_mgr.load_block(self.repo_id, 1, self.moved_bkid)
-        self.assertIn('this is moved file.', seafblk)
+        self.assertIn(b'this is moved file.', seafblk)
 
     def load_block_2(self):
         seafblk = block_mgr.load_block(self.repo_id_2, 1, self.new_bkid)
-        self.assertIn('this is new file.', seafblk)
+        self.assertIn(b'this is new file.', seafblk)
         seafblk = block_mgr.load_block(self.repo_id_2, 1, self.modified_bkid)
-        self.assertIn('this is modified file', seafblk)
+        self.assertIn(b'this is modified file', seafblk)
         seafblk = block_mgr.load_block(self.repo_id_2, 1, self.renamed_bkid)
-        self.assertIn('this is renamed file.', seafblk)
+        self.assertIn(b'this is renamed file.', seafblk)
         seafblk = block_mgr.load_block(self.repo_id_2, 1, self.moved_bkid)
-        self.assertIn('this is moved file.', seafblk)
+        self.assertIn(b'this is moved file.', seafblk)
 
     def test_load_block(self):
         test_multi = True

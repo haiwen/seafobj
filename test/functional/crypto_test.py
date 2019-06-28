@@ -41,7 +41,7 @@ class TestCrypto(unittest.TestCase):
         enc_data = crypto.enc_data(dec_data)
         obj_path = os.path.join(obj_store.obj_dir, TEST_REPO_ID, \
                                 TEST_HEAD_COMMIT[0:2], TEST_HEAD_COMMIT[2:])
-        with open(obj_path, 'w') as fd:
+        with open(obj_path, 'wb') as fd:
             fd.truncate(0)
             # write encrypted data to file
             fd.write(enc_data)
@@ -51,6 +51,6 @@ class TestCrypto(unittest.TestCase):
         dec_data = obj_store.read_obj(TEST_REPO_ID, 1, TEST_HEAD_COMMIT)
         cobj = json.loads(dec_data)
         self.assertEqual(TEST_HEAD_COMMIT, cobj['commit_id'])
-        with open(obj_path, 'w') as fd:
+        with open(obj_path, 'wb') as fd:
             fd.truncate(0)
             fd.write(dec_data)

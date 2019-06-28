@@ -1,11 +1,10 @@
-import Queue
+import queue
 import threading
 
 import rados
 
 from .base import AbstractObjStore
 
-from seafobj.utils import to_utf8
 from seafobj.utils.ceph_utils import ioctx_set_namespace
 from rados import LIBRADOS_ALL_NSPACES
 
@@ -22,7 +21,7 @@ class IoCtxPool(object):
     '''
     def __init__(self, conf, pool_size=5):
         self.conf = conf
-        self.pool = Queue.Queue(pool_size)
+        self.pool = queue.Queue(pool_size)
         if conf.ceph_client_id:
             self.cluster = rados.Rados(conffile=conf.ceph_conf_file, rados_id=conf.ceph_client_id)
         else:
@@ -32,7 +31,7 @@ class IoCtxPool(object):
     def get_ioctx(self, repo_id):
         try:
             ioctx = self.pool.get(False)
-        except Queue.Empty:
+        except queue.Empty:
             ioctx = self.create_ioctx()
 
         ioctx_set_namespace(ioctx, repo_id)
@@ -51,7 +50,7 @@ class IoCtxPool(object):
     def return_ioctx(self, ioctx):
         try:
             self.pool.put(ioctx, False)
-        except Queue.Full:
+        except queue.Full:
             ioctx.close()
 
 class SeafCephClient(object):
@@ -60,9 +59,6 @@ class SeafCephClient(object):
         self.ioctx_pool = IoCtxPool(conf)
 
     def read_object_content(self, repo_id, obj_id):
-        repo_id = to_utf8(repo_id)
-        obj_id = to_utf8(obj_id)
-
         ioctx = self.ioctx_pool.get_ioctx(repo_id)
 
         try:

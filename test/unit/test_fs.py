@@ -19,27 +19,27 @@ class TestSeafFSManager(BaseTest):
     def load_seafdir(self):
         seafdir = fs_mgr.load_seafdir(self.repo_id, 1, self.first_did)
         self.assertEqual(self.first_did, seafdir.obj_id)
-        self.assertIn('create_moved_folder', seafdir.dirents.keys())
-        self.assertIn('create_moved_file.md', seafdir.dirents.keys())
+        self.assertIn('create_moved_folder', list(seafdir.dirents.keys()))
+        self.assertIn('create_moved_file.md', list(seafdir.dirents.keys()))
         self.assertTrue(seafdir.dirents.get('create_moved_file.md', None))
         self.assertEqual('045dfc08495b5c6cbc1a4dc347f5e2987fd809f4', seafdir.dirents['create_moved_file.md'].id)
         self.assertTrue(seafdir.dirents.get('create_moved_folder', None))
         self.assertEqual('05a6f0455d1f11ecfc202f5e218274b092fd3dbc', seafdir.dirents['create_moved_folder'].id)
         seafdir = fs_mgr.load_seafdir(self.repo_id, 1, self.second_did)
-        self.assertIn('added_folder.md', seafdir.dirents.keys())
+        self.assertIn('added_folder.md', list(seafdir.dirents.keys()))
         self.assertEqual(self.second_did, seafdir.obj_id)
 
     def load_seafdir_2(self):
         seafdir = fs_mgr.load_seafdir(self.repo_id_2, 1, self.first_did)
         self.assertEqual(self.first_did, seafdir.obj_id)
-        self.assertIn('create_moved_folder', seafdir.dirents.keys())
-        self.assertIn('create_moved_file.md', seafdir.dirents.keys())
+        self.assertIn('create_moved_folder', list(seafdir.dirents.keys()))
+        self.assertIn('create_moved_file.md', list(seafdir.dirents.keys()))
         self.assertTrue(seafdir.dirents.get('create_moved_file.md', None))
         self.assertEqual('045dfc08495b5c6cbc1a4dc347f5e2987fd809f4', seafdir.dirents['create_moved_file.md'].id)
         self.assertTrue(seafdir.dirents.get('create_moved_folder', None))
         self.assertEqual('05a6f0455d1f11ecfc202f5e218274b092fd3dbc', seafdir.dirents['create_moved_folder'].id)
         seafdir = fs_mgr.load_seafdir(self.repo_id_2, 1, self.second_did)
-        self.assertIn('added_folder.md', seafdir.dirents.keys())
+        self.assertIn('added_folder.md', list(seafdir.dirents.keys()))
         self.assertEqual(self.second_did, seafdir.obj_id)
 
     def test_load_seafdir(self):

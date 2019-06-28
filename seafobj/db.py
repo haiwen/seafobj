@@ -1,8 +1,8 @@
 import os
-import ConfigParser
+import configparser
 import logging
 
-from urllib import quote_plus
+from urllib.parse import quote_plus
 
 from sqlalchemy import create_engine
 from sqlalchemy.event import contains as has_event_listener, listen as add_event_listener
@@ -83,7 +83,8 @@ def init_db_session_class(config):
     """Configure Session class for mysql according to the config file."""
     try:
         engine = create_engine_from_conf(config)
-    except ConfigParser.NoOptionError, ConfigParser.NoSectionError:
+    except configparser.NoOptionError as xxx_todo_changeme:
+        configparser.NoSectionError = xxx_todo_changeme
         raise RuntimeError("invalid seafile config.")
 
     # reflect the tables
