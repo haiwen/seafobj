@@ -85,7 +85,7 @@ def get_s3_conf_from_json(cfg):
     if use_v4_sig:
         if not cfg.has_key('aws_region'):
             raise InvalidConfigError('aws_region is not configured')
-        aws_region = cfg('aws_region')
+        aws_region = cfg['aws_region']
 
     use_https = False
     if cfg.has_key('use_https'):
