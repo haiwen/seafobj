@@ -28,13 +28,15 @@ class SeafObjStoreFS(AbstractObjStore):
     def list_objs(self, repo_id=None):
 
         top_path = self.obj_dir
-        for repo_id in os.listdir(top_path):
-            repo_path = os.path.join(top_path, repo_id)
+        for _repo_id in os.listdir(top_path):
+            if repo_id and _repo_id != repo_id:
+                continue;
+            repo_path = os.path.join(top_path, _repo_id)
             for spath in os.listdir(repo_path):
                 obj_path = os.path.join(repo_path, spath)
                 for lpath in os.listdir(obj_path):
                     obj_id = spath + lpath
-                    obj = [repo_id, obj_id, 0]
+                    obj = [_repo_id, obj_id, 0]
                     yield obj
 
     def obj_exists(self, repo_id, obj_id):
