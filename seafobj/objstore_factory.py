@@ -218,18 +218,9 @@ class SeafileConfig(object):
         return SeafCrypto(raw_key, raw_iv)
 
     def get_seafile_storage_dir(self):
-        ccnet_conf_dir = os.environ.get('CCNET_CONF_DIR', '')
-        if ccnet_conf_dir:
-            seafile_ini = os.path.join(ccnet_conf_dir, 'seafile.ini')
-            if not os.access(seafile_ini, os.F_OK):
-                raise RuntimeError('%s does not exist', seafile_ini)
-
-            with open(seafile_ini) as f:
-                seafile_data_dir = f.readline().rstrip()
-                return os.path.join(seafile_data_dir, 'storage')
-        else:
-            # In order to pass test, if not set CCNET_CONF_DIR env, use follow path
+        if self.seafile_conf_dir and os.path.exists(self.seafile_conf_dir):
             return os.path.join(self.seafile_conf_dir, 'storage')
+        raise RuntimeError('environment SEAFILE_CON_DIR not set correctly.');
 
 class SeafObjStoreFactory(object):
     obj_section_map = {
