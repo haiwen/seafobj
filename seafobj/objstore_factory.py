@@ -220,7 +220,7 @@ class SeafileConfig(object):
     def get_seafile_storage_dir(self):
         if self.seafile_conf_dir and os.path.exists(self.seafile_conf_dir):
             return os.path.join(self.seafile_conf_dir, 'storage')
-        raise RuntimeError('environment SEAFILE_CON_DIR not set correctly.');
+        raise RuntimeError('environment SEAFILE_CONF_DIR not set correctly.');
 
 class SeafObjStoreFactory(object):
     obj_section_map = {
