@@ -23,7 +23,7 @@ def get_ceph_conf_from_json(cfg):
     pool_name = cfg['pool']
     ceph_client_id = None
 
-    if 'host' in cfg:
+    if 'ceph_client_id' in cfg:
         host = cfg['ceph_client_id']
 
     from seafobj.backends.ceph import CephConf
@@ -343,11 +343,6 @@ class SeafObjStoreFactory(object):
             from seafobj.backends.swift import SeafObjStoreSwift
             swift_conf = get_swift_conf(cfg, section)
             return SeafObjStoreSwift(compressed, swift_conf, crypto)
-
-        elif backend_name == 'ceph':
-            from seafobj.backends.ceph import SeafObjStoreCeph
-            ceph_conf = get_ceph_conf(cfg, section)
-            return SeafObjStoreCeph(compressed, ceph_conf, crypto)
 
         else:
             raise InvalidConfigError('unknown %s backend "%s"' % (obj_type, backend_name))
