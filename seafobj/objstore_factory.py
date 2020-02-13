@@ -18,6 +18,19 @@ def get_ceph_conf(cfg, section):
 
     return CephConf(config_file, pool_name, ceph_client_id)
 
+def get_ceph_conf_from_json(cfg):
+    config_file = cfg['ceph_config']
+    pool_name = cfg['pool']
+    ceph_client_id = None
+
+    if 'ceph_client_id' in cfg:
+        host = cfg['ceph_client_id']
+
+    from seafobj.backends.ceph import CephConf
+    conf = CephConf(config_file, pool_name, ceph_client_id)
+
+    return conf
+
 def get_s3_conf(cfg, section):
     key_id = cfg.get(section, 'key_id')
     key = cfg.get(section, 'key')
@@ -282,6 +295,10 @@ class SeafObjStoreFactory(object):
                 from seafobj.backends.s3 import SeafObjStoreS3
                 s3_conf = get_s3_conf_from_json(bend[obj_type])
                 self.obj_stores[obj_type][storage_id] = SeafObjStoreS3(compressed, s3_conf, crypto)
+            elif bend[obj_type]['backend'] == 'ceph':
+                from seafobj.backends.ceph import SeafObjStoreCeph
+                ceph_conf = get_ceph_conf_from_json(bend[obj_type])
+                self.obj_stores[obj_type][storage_id] = SeafObjStoreCeph(compressed, ceph_conf, crypto)
             else:
                 raise InvalidConfigError('Unknown backend type: %s.' % bend[obj_type]['backend'])
 
