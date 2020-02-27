@@ -107,3 +107,12 @@ class SeafObjStoreCeph(AbstractObjStore):
             raise
         finally:
             self.ceph_client.ioctx_pool.return_ioctx(ioctx)
+    
+    def remove_obj(self, repo_id, obj_id):
+        try:
+            ioctx = self.ceph_client.ioctx_pool.get_ioctx(repo_id)
+            ioctx.remove_object(obj_id)
+        except Exception:
+            raise
+        finally:
+            self.ceph_client.ioctx_pool.return_ioctx(ioctx)
