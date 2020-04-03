@@ -49,8 +49,8 @@ class SeafObjStoreOSS(AbstractObjStore):
     def list_objs(self, repo_id=None):
         object_list = []
         next_marker = ''
-        while (1):
-            if repo_id != None:
+        while True:
+            if repo_id:
                 Simp_obj_info = self.oss_client.bucket.list_objects(repo_id, '',next_marker)
             else:
                 Simp_obj_info = self.oss_client.bucket.list_objects('', '', next_marker)
@@ -80,3 +80,8 @@ class SeafObjStoreOSS(AbstractObjStore):
         key = '%s/%s' % (repo_id, obj_id)
 
         self.oss_client.bucket.put_object(key, data)
+
+    def remove_obj(self, repo_id, obj_id):
+        key = '%s/%s' % (repo_id, obj_id)
+
+        self.oss_client.bucket.delete_object(key)

@@ -26,9 +26,8 @@ class SeafObjStoreFS(AbstractObjStore):
         return 'filesystem storage backend'
 
     def list_objs(self, repo_id=None):
-
         top_path = self.obj_dir
-        for repo_id in os.listdir(top_path):
+        if repo_id:
             repo_path = os.path.join(top_path, repo_id)
             for spath in os.listdir(repo_path):
                 obj_path = os.path.join(repo_path, spath)
@@ -36,6 +35,15 @@ class SeafObjStoreFS(AbstractObjStore):
                     obj_id = spath + lpath
                     obj = [repo_id, obj_id, 0]
                     yield obj
+        else:
+            for _repo_id in os.listdir(top_path):
+                repo_path = os.path.join(top_path, _repo_id)
+                for spath in os.listdir(repo_path):
+                    obj_path = os.path.join(repo_path, spath)
+                    for lpath in os.listdir(obj_path):
+                        obj_id = spath + lpath
+                        obj = [_repo_id, obj_id, 0]
+                        yield obj
 
     def obj_exists(self, repo_id, obj_id):
         dirname = self.obj_dir
@@ -54,4 +62,12 @@ class SeafObjStoreFS(AbstractObjStore):
         filename = os.path.join(path, obj_id[2:])
         with open(filename, 'wb') as fp:
             fp.write(data)
+    
+    def remove_obj(self, repo_id, obj_id):
+        path = os.path.join(self.obj_dir, repo_id, obj_id[:2], obj_id[2:])
 
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+            except OSError as e:
+                raise
