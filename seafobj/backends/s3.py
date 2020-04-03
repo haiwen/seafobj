@@ -78,13 +78,17 @@ class SeafObjStoreS3(AbstractObjStore):
         if not self.s3_client.conn:
             self.s3_client.do_connect()
 
-        keys = self.s3_client.bucket.list()
+        if repo_id:
+            keys = self.s3_client.bucket.list(prefix=repo_id)
+        else:
+            keys = self.s3_client.bucket.list()
+
         for key in keys:
             tokens = key.name.split('/')
             if len(tokens) == 2:
-                repo_id = tokens[0]
+                _repo_id = tokens[0]
                 obj_id = tokens[1]
-                obj = [repo_id, obj_id, 0]
+                obj = [_repo_id, obj_id, 0]
                 yield obj
 
     def obj_exists(self, repo_id, obj_id):
@@ -108,3 +112,11 @@ class SeafObjStoreS3(AbstractObjStore):
         key = Key(bucket=bucket, name=s3_path)
         key.set_contents_from_string(data)
 
+    def remove_obj(self, repo_id, obj_id):
+        if not self.s3_client.conn or not self.s3_client.bucket:
+            self.s3_client.do_connect()
+
+        bucket = self.s3_client.bucket
+        s3_path = '%s/%s' % (repo_id, obj_id)
+        key = Key(bucket=bucket, name=s3_path)
+        bucket.delete_key(key)
