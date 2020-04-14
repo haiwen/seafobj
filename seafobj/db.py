@@ -44,7 +44,7 @@ def create_engine_from_conf(config):
             username = config.get('database', 'user')
             passwd = config.get('database', 'password')
             dbname = config.get('database', 'db_name')
-            db_url = "mysql+mysqldb://%s:%s@%s:%s/%s?charset=utf8" % (username, quote_plus(passwd), host, port, dbname)
+            db_url = "mysql+pymysql://%s:%s@%s:%s/%s?charset=utf8" % (username, quote_plus(passwd), host, port, dbname)
             logging.warning('[seafobj] database: mysql, name: %s', dbname)
         elif backend == 'oracle':
             if config.has_option('database', 'host'):
