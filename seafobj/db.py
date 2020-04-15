@@ -26,7 +26,6 @@ def create_engine_from_conf(config):
             logging.warning('SEAFILE_CONF_DIR not set, can not load sqlite database.')
             return None
         db_url = "sqlite:///%s" % path
-        logging.info('[seafobj] database: sqlite3, path: %s', path)
         need_connection_pool_fix = False
     else:
         backend = config.get('database', 'type')
@@ -45,7 +44,6 @@ def create_engine_from_conf(config):
             passwd = config.get('database', 'password')
             dbname = config.get('database', 'db_name')
             db_url = "mysql+pymysql://%s:%s@%s:%s/%s?charset=utf8" % (username, quote_plus(passwd), host, port, dbname)
-            logging.warning('[seafobj] database: mysql, name: %s', dbname)
         elif backend == 'oracle':
             if config.has_option('database', 'host'):
                 host = config.get('database', 'host').lower()
@@ -61,8 +59,6 @@ def create_engine_from_conf(config):
             service_name = config.get('database', 'service_name')
             db_url = "oracle://%s:%s@%s:%s/%s" % (username, quote_plus(passwd),
                     host, port, service_name)
-
-            logging.info('[seafobj] database: oracle, service_name: %s', service_name)
         else:
             raise RuntimeError("Unknown database backend: %s" % backend)
 
