@@ -29,17 +29,27 @@ class SeafObjStoreFS(AbstractObjStore):
         top_path = self.obj_dir
         if repo_id:
             repo_path = os.path.join(top_path, repo_id)
+            if not os.path.exists(repo_path):
+                return
             for spath in os.listdir(repo_path):
                 obj_path = os.path.join(repo_path, spath)
+                if not os.path.exists(obj_path):
+                    continue
                 for lpath in os.listdir(obj_path):
                     obj_id = spath + lpath
                     obj = [repo_id, obj_id, 0]
                     yield obj
         else:
+            if not os.path.exists(top_path):
+                return
             for _repo_id in os.listdir(top_path):
                 repo_path = os.path.join(top_path, _repo_id)
+                if not os.path.exists(repo_path):
+                    return
                 for spath in os.listdir(repo_path):
                     obj_path = os.path.join(repo_path, spath)
+                    if not os.path.exists(obj_path):
+                        continue
                     for lpath in os.listdir(obj_path):
                         obj_id = spath + lpath
                         obj = [_repo_id, obj_id, 0]
