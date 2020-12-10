@@ -12,6 +12,8 @@ from sqlalchemy.pool import Pool
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.ext.automap import automap_base
 
+from seaserv import seafile_api
+
 # Automatically generate mapped classes and relationships from a database schema
 Base = automap_base()
 
@@ -40,8 +42,13 @@ def create_engine_from_conf(config):
                 port = config.getint('database', 'port')
             else:
                 port = 3306
+            use_crypt = False
+            if config.has_option('general', 'use_crypt'):
+                use_crypt = config.getboolean('general', 'use_crypt')
             username = config.get('database', 'user')
             passwd = config.get('database', 'password')
+            if use_crypt:
+                passwd = seafile_api.seafile_decrypt(passwd)
             dbname = config.get('database', 'db_name')
             db_url = "mysql+pymysql://%s:%s@%s:%s/%s?charset=utf8" % (username, quote_plus(passwd), host, port, dbname)
         elif backend == 'oracle':
