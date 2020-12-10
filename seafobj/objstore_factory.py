@@ -7,6 +7,8 @@ import json
 from seafobj.exceptions import InvalidConfigError
 from seafobj.backends.filesystem import SeafObjStoreFS
 
+from seaserv import seafile_api
+
 def get_ceph_conf(cfg, section):
     config_file = cfg.get(section, 'ceph_config')
     pool_name = cfg.get(section, 'pool')
@@ -32,8 +34,13 @@ def get_ceph_conf_from_json(cfg):
     return conf
 
 def get_s3_conf(cfg, section):
+    use_crypt = False
+    if cfg.has_option('general', 'use_crypt'):
+        use_crypt = cfg.getboolean('general', 'use_crypt')
     key_id = cfg.get(section, 'key_id')
     key = cfg.get(section, 'key')
+    if use_crypt:
+        key = seafile_api.seafile_decrypt(key)
     bucket = cfg.get(section, 'bucket')
 
     host = None
@@ -115,8 +122,13 @@ def get_s3_conf_from_json(cfg):
     return conf
 
 def get_oss_conf(cfg, section):
+    use_crypt = False
+    if cfg.has_option('general', 'use_crypt'):
+        use_crypt = cfg.getboolean('general', 'use_crypt')
     key_id = cfg.get(section, 'key_id')
     key = cfg.get(section, 'key')
+    if use_crypt:
+        key = seafile_api.seafile_decrypt(key)
     bucket = cfg.get(section, 'bucket')
     endpoint = ''
     if cfg.has_option(section, 'endpoint'):
@@ -133,8 +145,13 @@ def get_oss_conf(cfg, section):
     return conf
 
 def get_swift_conf(cfg, section):
+    use_crypt = False
+    if cfg.has_option('general', 'use_crypt'):
+        use_crypt = cfg.getboolean('general', 'use_crypt')
     user_name = cfg.get(section, 'user_name')
     password = cfg.get(section, 'password')
+    if use_crypt:
+        password = seafile_api.seafile_decrypt(password)
     container = cfg.get(section, 'container')
     auth_host = cfg.get(section, 'auth_host')
     if not cfg.has_option(section, 'auth_ver'):
