@@ -193,39 +193,39 @@ class SeafSwiftClient(object):
         raise GetObjectError('[swift] Failed to read %s: quit after %d unauthorized retries.' %
                              (obj_id, SeafSwiftClient.MAX_RETRY))
 
-#  def list_objs(self):
-#      i = 0
-#      while i <= SeafSwiftClient.MAX_RETRY:
-#          if not self.authenticated():
-#              self.authenticate()
-#
-#          url = '%s/%s' % (self.storage_url, self.swift_conf.container)
-#          hdr = {'X-Auth-Token': self.token}
-#          req = urllib.request.Request(url, headers=hdr)
-#          try:
-#              resp = urllib.request.urlopen(req)
-#          except urllib.error.HTTPError as e:
-#              err_code = e.getcode()
-#              if err_code == http.client.UNAUTHORIZED:
-#                  # Reset token and storage_url
-#                  self.token = None
-#                  self.storage_url = None
-#                  i += 1
-#                  continue
-#              else:
-#                  raise GetObjectError('[swift] Failed to list objs %s' % err_code)
-#          except urllib.error.URLError as e:
-#              raise GetObjectError('[swift] Failed to list objs' % e.reason)
-#
-#          ret_code = resp.getcode()
-#          ret_data = resp.read()
-#
-#          if ret_code == http.client.OK:
-#              return ret_data
-#          else:
-#              raise GetObjectError('[swift] Unexpected code when list objs %s' % ret_code)
-#      raise GetObjectError('[swift] Failed to list objs: quit after %d unauthorized retries.' %
-#                           SeafSwiftClient.MAX_RETRY)
+    def list_objs(self):
+        i = 0
+        while i <= SeafSwiftClient.MAX_RETRY:
+            if not self.authenticated():
+                self.authenticate()
+
+            url = '%s/%s' % (self.storage_url, self.swift_conf.container)
+            hdr = {'X-Auth-Token': self.token}
+            req = urllib.request.Request(url, headers=hdr)
+            try:
+                resp = urllib.request.urlopen(req)
+            except urllib.error.HTTPError as e:
+                err_code = e.getcode()
+                if err_code == http.client.UNAUTHORIZED:
+                    # Reset token and storage_url
+                    self.token = None
+                    self.storage_url = None
+                    i += 1
+                    continue
+                else:
+                    raise GetObjectError('[swift] Failed to list objs %s' % err_code)
+            except urllib.error.URLError as e:
+                raise GetObjectError('[swift] Failed to list objs' % e.reason)
+
+            ret_code = resp.getcode()
+            ret_data = resp.read()
+
+            if ret_code == http.client.OK:
+                return ret_data
+            else:
+                raise GetObjectError('[swift] Unexpected code when list objs %s' % ret_code)
+        raise GetObjectError('[swift] Failed to list objs: quit after %d unauthorized retries.' %
+                            SeafSwiftClient.MAX_RETRY)
 
     def remove_obj(self, obj_id):
         i = 0
@@ -270,18 +270,18 @@ class SeafObjStoreSwift(AbstractObjStore):
     def get_name(self):
         return 'Swift storage backend'
 
- #  def list_objs(self, repo_id=None):
- #      objs = self.swift_client.list_objs().decode('utf8').split('\n')
- #      if repo_id:
- #          for obj in objs:
- #              tokens = obj.split('/')
- #              if tokens[0] == repo_id and len(tokens) == 2:
- #                  yield [tokens[0], tokens[1], 0]
- #      else:
- #          for obj in objs:
- #              tokens = obj.split('/')
- #              if len(tokens) == 2:
- #                  yield [tokens[0], tokens[1], 0]
+    def list_objs(self, repo_id=None):
+        objs = self.swift_client.list_objs().decode('utf8').split('\n')
+        if repo_id:
+            for obj in objs:
+                tokens = obj.split('/')
+                if tokens[0] == repo_id and len(tokens) == 2:
+                    yield [tokens[0], tokens[1], 0]
+        else:
+            for obj in objs:
+                tokens = obj.split('/')
+                if len(tokens) == 2:
+                    yield [tokens[0], tokens[1], 0]
 
     def remove_obj(self, repo_id, obj_id):
         key = '%s/%s' % (repo_id, obj_id)
