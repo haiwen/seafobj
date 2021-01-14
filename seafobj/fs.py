@@ -1,4 +1,5 @@
 import logging
+import time
 import struct
 import stat
 import json
@@ -101,8 +102,8 @@ class SeafFile(object):
 
         self._content = None
 
-    def get_stream(self):
-        return SeafileStream(self)
+    def get_stream(self, block_map={}):
+        return SeafileStream(self, block_map)
 
     def get_content(self, limit=-1):
         if limit <= 0:
@@ -116,13 +117,19 @@ class SeafFile(object):
             stream = self.get_stream()
             return stream.read(limit)
 
+class BlockMap(object):
+    def __init__(self):
+        self.block_sizes = []
+        self.timestamp = time.time()
+
 class SeafileStream(object):
     '''Implements basic file-like interface'''
-    def __init__(self, file_obj):
+    def __init__(self, file_obj, block_map):
         self.file_obj = file_obj
         self.block = None
         self.block_idx = 0
         self.block_offset = 0
+        self.block_map = block_map
 
     def read(self, size):
         remain = size
@@ -136,6 +143,7 @@ class SeafileStream(object):
                 self.block = block_mgr.load_block(self.file_obj.store_id,
                                                   self.file_obj.version,
                                                   blocks[self.block_idx])
+                
                 self.block_idx += 1
                 self.block_offset = 0
 
@@ -155,6 +163,36 @@ class SeafileStream(object):
 
     def close(self):
         pass
+
+    def seek(self, pos):
+        self.block = None
+        self.block_idx = 0
+        self.block_offset = 0
+        if pos == 0: 
+            return
+
+        if self.file_obj.obj_id not in self.block_map:
+            block_map = BlockMap()
+            for i in range(len(self.file_obj.blocks)):
+                block = block_mgr.load_block(self.file_obj.store_id, self.file_obj.version, self.file_obj.blocks[i])
+                block_map.block_sizes.append(len(block))
+            self.block_map[self.file_obj.obj_id] = block_map
+
+        block_map = self.block_map[self.file_obj.obj_id]        
+        block_map.timestamp = time.time()
+        while pos > 0:
+            if self.block_idx == len(self.file_obj.blocks):
+                break
+            block_size = block_map.block_sizes[self.block_idx]
+            self.block_idx += 1
+            if pos >= block_size:
+                pos -= block_size
+                self.block_offset = block_size
+            else:
+                self.block_offset = pos
+                pos = 0
+            if pos == 0:
+                self.block = block_mgr.load_block(self.file_obj.store_id, self.file_obj.version, self.file_obj.blocks[self.block_idx-1])
 
 class SeafFSManager(object):
     def __init__(self):
