@@ -81,3 +81,16 @@ class SeafObjStoreFS(AbstractObjStore):
                 os.remove(path)
             except OSError as e:
                 raise
+    
+    def stat_raw(self, repo_id, obj_id):
+        path = os.path.join(self.obj_dir, repo_id, obj_id[:2], obj_id[2:])
+
+        stat_info = None
+        if os.path.exists(path):
+            try:
+                stat_info = os.stat(path)
+            except OSError as e:
+                raise
+        if not stat_info:
+            return -1
+        return stat_info.st_size

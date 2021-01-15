@@ -119,3 +119,13 @@ class SeafObjStoreCeph(AbstractObjStore):
             raise
         finally:
             self.ceph_client.ioctx_pool.return_ioctx(ioctx)
+    
+    def stat_raw(self, repo_id, obj_id):
+        ioctx = self.ceph_client.ioctx_pool.get_ioctx(repo_id)
+        try:
+            stat_info = ioctx.stat(obj_id)
+            return stat_info[0]
+        except rados.ObjectNotFound:
+            raise
+        finally:
+            self.ceph_client.ioctx_pool.return_ioctx(ioctx)
