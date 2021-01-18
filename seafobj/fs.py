@@ -116,46 +116,6 @@ class SeafFile(object):
             stream = self.get_stream()
             return stream.read(limit)
 
-class SeafileStream(object):
-    '''Implements basic file-like interface'''
-    def __init__(self, file_obj):
-        self.file_obj = file_obj
-        self.block = None
-        self.block_idx = 0
-        self.block_offset = 0
-
-    def read(self, size):
-        remain = size
-        blocks = self.file_obj.blocks
-        ret = b''
-
-        while True:
-            if not self.block or self.block_offset == len(self.block):
-                if self.block_idx == len(blocks):
-                    break
-                self.block = block_mgr.load_block(self.file_obj.store_id,
-                                                  self.file_obj.version,
-                                                  blocks[self.block_idx])
-                self.block_idx += 1
-                self.block_offset = 0
-
-            if self.block_offset + remain >= len(self.block):
-                ret += self.block[self.block_offset:]
-                remain -= (len(self.block) - self.block_offset)
-                self.block_offset = len(self.block)
-            else:
-                ret += self.block[self.block_offset:self.block_offset+remain]
-                self.block_offset += remain
-                remain = 0
-
-            if remain == 0:
-                break
-
-        return ret
-
-    def close(self):
-        pass
-
 class SeafFSManager(object):
     def __init__(self):
         if objstore_factory.enable_storage_classes:
