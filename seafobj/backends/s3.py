@@ -120,3 +120,12 @@ class SeafObjStoreS3(AbstractObjStore):
         s3_path = '%s/%s' % (repo_id, obj_id)
         key = Key(bucket=bucket, name=s3_path)
         bucket.delete_key(key)
+    
+    def stat_raw(self, repo_id, obj_id):
+        if not self.s3_client.conn or not self.s3_client.bucket:
+            self.s3_client.do_connect()
+
+        bucket = self.s3_client.bucket
+        s3_path = '%s/%s' % (repo_id, obj_id)
+        key = Key(bucket=bucket, name=s3_path)
+        return key.size

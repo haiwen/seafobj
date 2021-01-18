@@ -255,6 +255,36 @@ class SeafSwiftClient(object):
             return ret_code
         raise GetObjectError('[swift] Failed to remove obj %s: quit after %d unauthorized retries.' %
                              (obj_id, SeafSwiftClient.MAX_RETRY))
+    
+    def stat_obj(self, obj_id):
+        i = 0
+        while i <= SeafSwiftClient.MAX_RETRY:
+            if not self.authenticated():
+                self.authenticate()
+
+            url = '%s/%s/%s' % (self.storage_url, self.swift_conf.container, obj_id)
+            hdr = {'X-Auth-Token': self.token}
+            req = urllib.request.Request(url, headers=hdr, method='HEAD')
+            try:
+                resp = urllib.request.urlopen(req)
+            except urllib.error.HTTPError as e:
+                err_code = e.getcode()
+                if err_code == http.client.UNAUTHORIZED:
+                    # Reset token and storage_url
+                    self.token = None
+                    self.storage_url = None
+                    i += 1
+                    continue
+                else:
+                    raise GetObjectError('[swift] Failed to remove %s: %d' % (obj_id, err_code))
+            except urllib.error.URLError as e:
+                raise GetObjectError('[swift] Failed to remove %s: %s' % (obj_id, e.reason))
+
+            for k, v in resp.headers.items():
+                if k == 'Content-Length':
+                    return int(v)
+        raise GetObjectError('[swift] Failed to remove obj %s: quit after %d unauthorized retries.' %
+                             (obj_id, SeafSwiftClient.MAX_RETRY))
 
 class SeafObjStoreSwift(AbstractObjStore):
     '''Swift backend for seafile objecs'''
@@ -287,3 +317,8 @@ class SeafObjStoreSwift(AbstractObjStore):
         key = '%s/%s' % (repo_id, obj_id)
 
         self.swift_client.remove_obj(key)
+    
+    def stat_raw(self, repo_id, obj_id):
+        key = '%s/%s' % (repo_id, obj_id)
+
+        return self.swift_client.stat_obj(key)

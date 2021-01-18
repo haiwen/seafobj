@@ -23,6 +23,9 @@ class SeafBlockManager(object):
             else:
                 data = self.obj_stores['__default__'].read_obj(repo_id, version, obj_id)
         return data
+    
+    def stat_block(self, repo_id, version, obj_id):
+        return self.obj_store.stat(repo_id, version, obj_id)
 
 
 block_mgr = SeafBlockManager()

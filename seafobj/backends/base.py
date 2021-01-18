@@ -42,3 +42,15 @@ class AbstractObjStore(object):
     def write_obj(self, data, repo_id, obj_id):
         '''Write data to destination backend'''
         raise NotImplementedError
+    
+    def stat(self, repo_id, verison, obj_id):
+        if self.crypto or self.compressed:
+            try:
+                data = self.read_obj(repo_id, verison, obj_id)
+                return len(data)
+            except:
+                raise
+        return self.stat_raw(repo_id, obj_id)
+        
+    def stat_raw(self, repo_id, obj_id):
+        raise NotImplementedError

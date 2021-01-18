@@ -85,3 +85,8 @@ class SeafObjStoreOSS(AbstractObjStore):
         key = '%s/%s' % (repo_id, obj_id)
 
         self.oss_client.bucket.delete_object(key)
+    
+    def stat_raw(self, repo_id, obj_id):
+        key = '%s/%s' % (repo_id, obj_id)
+        
+        return self.oss_client.bucket.get_object_meta(key).headers['Size']
