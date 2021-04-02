@@ -102,7 +102,8 @@ def get_s3_conf_from_json(cfg):
 
     use_https = False
     if 'use_https' in cfg:
-        use_https = cfg['use_https']
+        if str(cfg['use_https']).lower().strip() == 'true':
+            use_https = True
 
     path_style_request = False
     if 'path_style_request' in cfg:
