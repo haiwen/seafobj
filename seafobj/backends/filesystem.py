@@ -71,7 +71,7 @@ class SeafObjStoreFS(AbstractObjStore):
                 if e.errno != errno.EEXIST:
                     raise
 
-        with NamedTemporaryFile(mode='w+b', delete=False) as fp:
+        with NamedTemporaryFile(mode='w+b', dir=path, delete=False) as fp:
             fp.write(data)
 
         filename = os.path.join(path, obj_id[2:])
