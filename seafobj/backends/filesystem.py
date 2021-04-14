@@ -1,5 +1,6 @@
 import os
 import errno
+from tempfile import NamedTemporaryFile
 
 from .base import AbstractObjStore
 
@@ -69,9 +70,12 @@ class SeafObjStoreFS(AbstractObjStore):
             except OSError as e:
                 if e.errno != errno.EEXIST:
                     raise
-        filename = os.path.join(path, obj_id[2:])
-        with open(filename, 'wb') as fp:
+
+        with NamedTemporaryFile(mode='w+b', delete=False) as fp:
             fp.write(data)
+
+        filename = os.path.join(path, obj_id[2:])
+        os.rename(fp.name, filename)
     
     def remove_obj(self, repo_id, obj_id):
         path = os.path.join(self.obj_dir, repo_id, obj_id[:2], obj_id[2:])
