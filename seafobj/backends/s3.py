@@ -128,4 +128,5 @@ class SeafObjStoreS3(AbstractObjStore):
         bucket = self.s3_client.bucket
         s3_path = '%s/%s' % (repo_id, obj_id)
         key = Key(bucket=bucket, name=s3_path)
+        key.open_read()
         return key.size
