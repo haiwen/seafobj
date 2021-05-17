@@ -230,7 +230,10 @@ class SeafileConfig(object):
         from seafobj.utils.crypto import SeafCrypto
         return SeafCrypto(raw_key, raw_iv)
 
-    def get_seafile_storage_dir(self):
+    def get_seafile_storage_dir(self, dir_path = None):
+        if os.environ.get('DEST_SEAFILE_CENTRAL_CONF_DIR', None) == self.central_config_dir:
+            storage_path = os.path.join(dir_path, 'storage')
+            return storage_path
         ccnet_conf_dir = os.environ.get('CCNET_CONF_DIR', '')
         if ccnet_conf_dir:
             seafile_ini = os.path.join(ccnet_conf_dir, 'seafile.ini')
@@ -323,10 +326,16 @@ class SeafObjStoreFactory(object):
             backend_name = cfg.get(section, 'name')
         else:
             backend_name = 'fs'
+        
+        dir_path = None
+        if cfg.has_option(section, 'dir'):
+            dir_path = cfg.get(section, 'dir')
 
         compressed = obj_type == 'fs'
         if backend_name == 'fs':
-            obj_dir = os.path.join(self.seafile_cfg.get_seafile_storage_dir(), obj_type)
+            obj_dir = os.path.join(self.seafile_cfg.get_seafile_storage_dir(dir_path), obj_type)
+            if not os.path.exists(obj_dir):
+                os.makedirs(obj_dir)
             return SeafObjStoreFS(compressed, obj_dir, crypto)
 
         elif backend_name == 's3':
