@@ -315,10 +315,19 @@ class SeafObjStoreFactory(object):
             backend_name = cfg.get(section, 'name')
         else:
             backend_name = 'fs'
+        
+        dir_path = None
+        if cfg.has_option(section, 'dir'):
+            dir_path = cfg.get(section, 'dir')
 
         compressed = obj_type == 'fs'
         if backend_name == 'fs':
-            obj_dir = os.path.join(self.seafile_cfg.get_seafile_storage_dir(), obj_type)
+            if dir_path is None:
+                obj_dir = os.path.join(self.seafile_cfg.get_seafile_storage_dir(), obj_type)
+            else:
+                obj_dir = os.path.join(dir_path, 'storage', obj_type)
+            if not os.path.exists(obj_dir):
+                os.makedirs(obj_dir)
             return SeafObjStoreFS(compressed, obj_dir, crypto)
 
         elif backend_name == 's3':
