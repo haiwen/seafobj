@@ -231,7 +231,7 @@ class SeafileConfig(object):
         return SeafCrypto(raw_key, raw_iv)
 
     def get_seafile_storage_dir(self, dir_path = None):
-        if os.environ.get('DEST_SEAFILE_CENTRAL_CONF_DIR', None) == self.central_config_dir:
+        if dir_path is not None:
             storage_path = os.path.join(dir_path, 'storage')
             return storage_path
         ccnet_conf_dir = os.environ.get('CCNET_CONF_DIR', '')
