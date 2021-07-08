@@ -25,7 +25,14 @@ class SeafBlockManager(object):
         return data
     
     def stat_block(self, repo_id, version, obj_id):
-        return self.obj_store.stat(repo_id, version, obj_id)
+        if not objstore_factory.enable_storage_classes:
+            return self.obj_store.stat(repo_id, version, obj_id)
+        else:
+            storage_id = get_repo_storage_id(repo_id)
+            if storage_id:
+                return self.obj_stores[storage_id].stat(repo_id, version, obj_id)
+            else:
+                return self.obj_stores['__default__'].stat(repo_id, version, obj_id)
 
 
 block_mgr = SeafBlockManager()
