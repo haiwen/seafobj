@@ -79,10 +79,7 @@ def get_s3_conf(cfg, section):
 
     return conf
 
-def get_s3_conf_from_json(cfg):
-    use_crypt = False
-    if cfg.has_option('general', 'use_crypt'):
-        use_crypt = cfg.getboolean('general', 'use_crypt')
+def get_s3_conf_from_json(cfg, use_crypt):
     key_id = cfg['key_id']
     key = cfg['key']
     if use_crypt:
@@ -149,10 +146,7 @@ def get_oss_conf(cfg, section):
 
     return conf
 
-def get_oss_conf_from_json(cfg):
-    use_crypt = False
-    if cfg.has_option('general', 'use_crypt'):
-        use_crypt = cfg.getboolean('general', 'use_crypt')
+def get_oss_conf_from_json(cfg, use_crypt):
     key_id = cfg['key_id']
     key = cfg['key']
     if use_crypt:
@@ -170,7 +164,7 @@ def get_oss_conf_from_json(cfg):
     host = endpoint
 
     from seafobj.backends.alioss import OSSConf
-    conf = OSSConf(key_id, key, bucket, bucket, host)
+    conf = OSSConf(key_id, key, bucket, host)
 
     return conf
 
@@ -209,10 +203,7 @@ def get_swift_conf(cfg, section):
     conf = SwiftConf(user_name, password, container, auth_host, auth_ver, tenant, use_https, region, domain)
     return conf
 
-def get_swift_conf_from_json (cfg):
-    use_crypt = False
-    if cfg.has_option('general', 'use_crypt'):
-        use_crypt = cfg.getboolean('general', 'use_crypt')
+def get_swift_conf_from_json (cfg, use_crypt):
     user_name = cfg['user_name']
     password = cfg['password']
     if use_crypt:
@@ -283,6 +274,12 @@ class SeafileConfig(object):
         from seafobj.utils.crypto import SeafCrypto
         return SeafCrypto(raw_key, raw_iv)
 
+    def is_use_crypt (self):
+        if not self.cfg.has_option('general', 'use_crypt'):
+            return False 
+        use_crypt = cfg.getboolean('general', 'use_crypt')
+        return use_crypt
+
     def get_seafile_storage_dir(self):
         if self.seafile_conf_dir and os.path.exists(self.seafile_conf_dir):
             return os.path.join(self.seafile_conf_dir, 'storage')
@@ -322,6 +319,8 @@ class SeafObjStoreFactory(object):
         except KeyError:
             raise RuntimeError('unknown obj_type ' + obj_type)
 
+        use_crypt = self.seafile_cfg.is_use_crypt()
+
         for bend in self.json_cfg:
             storage_id = bend['storage_id']
 
@@ -337,7 +336,7 @@ class SeafObjStoreFactory(object):
                 self.obj_stores[obj_type][storage_id] = SeafObjStoreSwift(compressed, swift_conf, crypto)
             elif bend[obj_type]['backend'] == 's3':
                 from seafobj.backends.s3 import SeafObjStoreS3
-                s3_conf = get_s3_conf_from_json(bend[obj_type])
+                s3_conf = get_s3_conf_from_json(bend[obj_type], use_crypt)
                 self.obj_stores[obj_type][storage_id] = SeafObjStoreS3(compressed, s3_conf, crypto)
             elif bend[obj_type]['backend'] == 'ceph':
                 from seafobj.backends.ceph import SeafObjStoreCeph
@@ -345,7 +344,7 @@ class SeafObjStoreFactory(object):
                 self.obj_stores[obj_type][storage_id] = SeafObjStoreCeph(compressed, ceph_conf, crypto)
             elif bend[obj_type]['backend'] == 'oss':
                 from seafobj.backends.alioss import SeafObjStoreOSS
-                oss_conf = get_oss_conf_from_json(bend[obj_type])
+                oss_conf = get_oss_conf_from_json(bend[obj_type], use_crypt)
                 self.obj_stores[obj_type][storage_id] = SeafObjStoreOSS(compressed, oss_conf, crypto)
             else:
                 raise InvalidConfigError('Unknown backend type: %s.' % bend[obj_type]['backend'])
