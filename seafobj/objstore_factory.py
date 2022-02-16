@@ -79,11 +79,9 @@ def get_s3_conf(cfg, section):
 
     return conf
 
-def get_s3_conf_from_json(cfg, use_crypt):
+def get_s3_conf_from_json(cfg):
     key_id = cfg['key_id']
     key = cfg['key']
-    if use_crypt:
-        key = seafile_api.seafile_decrypt(key)
     bucket = cfg['bucket']
 
     host = None
@@ -203,11 +201,9 @@ def get_swift_conf(cfg, section):
     conf = SwiftConf(user_name, password, container, auth_host, auth_ver, tenant, use_https, region, domain)
     return conf
 
-def get_swift_conf_from_json (cfg, use_crypt):
+def get_swift_conf_from_json (cfg):
     user_name = cfg['user_name']
     password = cfg['password']
-    if use_crypt:
-        password = seafile_api.seafile_decrypt(password)
     container = cfg['container']
     auth_host = cfg['auth_host']
     if 'auth_ver' not in cfg:
@@ -336,7 +332,7 @@ class SeafObjStoreFactory(object):
                 self.obj_stores[obj_type][storage_id] = SeafObjStoreSwift(compressed, swift_conf, crypto)
             elif bend[obj_type]['backend'] == 's3':
                 from seafobj.backends.s3 import SeafObjStoreS3
-                s3_conf = get_s3_conf_from_json(bend[obj_type], use_crypt)
+                s3_conf = get_s3_conf_from_json(bend[obj_type])
                 self.obj_stores[obj_type][storage_id] = SeafObjStoreS3(compressed, s3_conf, crypto)
             elif bend[obj_type]['backend'] == 'ceph':
                 from seafobj.backends.ceph import SeafObjStoreCeph
