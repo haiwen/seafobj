@@ -144,6 +144,28 @@ def get_oss_conf(cfg, section):
 
     return conf
 
+def get_oss_conf_from_json(cfg, use_crypt):
+    key_id = cfg['key_id']
+    key = cfg['key']
+    if use_crypt:
+        key = seafile_api.seafile_decrypt(key)
+    bucket = cfg['bucket']
+
+    endpoint = ''
+
+    if 'endpoint' in cfg:
+        endpoint = cfg['endpoint']
+    if not endpoint:
+        region = cfg['region']
+        endpoint = 'oss-cn-%s-internal.aliyuncs.com' % region
+
+    host = endpoint
+
+    from seafobj.backends.alioss import OSSConf
+    conf = OSSConf(key_id, key, bucket, host)
+
+    return conf
+
 def get_swift_conf(cfg, section):
     use_crypt = False
     if cfg.has_option('general', 'use_crypt'):
@@ -248,6 +270,12 @@ class SeafileConfig(object):
         from seafobj.utils.crypto import SeafCrypto
         return SeafCrypto(raw_key, raw_iv)
 
+    def is_use_crypt (self):
+        if not self.cfg.has_option('general', 'use_crypt'):
+            return False 
+        use_crypt = cfg.getboolean('general', 'use_crypt')
+        return use_crypt
+
     def get_seafile_storage_dir(self):
         if self.seafile_conf_dir and os.path.exists(self.seafile_conf_dir):
             return os.path.join(self.seafile_conf_dir, 'storage')
@@ -287,6 +315,8 @@ class SeafObjStoreFactory(object):
         except KeyError:
             raise RuntimeError('unknown obj_type ' + obj_type)
 
+        use_crypt = self.seafile_cfg.is_use_crypt()
+
         for bend in self.json_cfg:
             storage_id = bend['storage_id']
 
@@ -308,6 +338,10 @@ class SeafObjStoreFactory(object):
                 from seafobj.backends.ceph import SeafObjStoreCeph
                 ceph_conf = get_ceph_conf_from_json(bend[obj_type])
                 self.obj_stores[obj_type][storage_id] = SeafObjStoreCeph(compressed, ceph_conf, crypto)
+            elif bend[obj_type]['backend'] == 'oss':
+                from seafobj.backends.alioss import SeafObjStoreOSS
+                oss_conf = get_oss_conf_from_json(bend[obj_type], use_crypt)
+                self.obj_stores[obj_type][storage_id] = SeafObjStoreOSS(compressed, oss_conf, crypto)
             else:
                 raise InvalidConfigError('Unknown backend type: %s.' % bend[obj_type]['backend'])
 
