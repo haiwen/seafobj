@@ -273,7 +273,7 @@ class SeafileConfig(object):
     def is_use_crypt (self):
         if not self.cfg.has_option('general', 'use_crypt'):
             return False 
-        use_crypt = cfg.getboolean('general', 'use_crypt')
+        use_crypt = self.cfg.getboolean('general', 'use_crypt')
         return use_crypt
 
     def get_seafile_storage_dir(self):
