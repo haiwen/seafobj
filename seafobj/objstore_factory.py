@@ -132,6 +132,26 @@ def get_oss_conf(cfg, section):
 
     return conf
 
+def get_oss_conf_from_json(cfg):
+    key_id = cfg['key_id']
+    key = cfg['key']
+    bucket = cfg['bucket']
+
+    endpoint = ''
+
+    if 'endpoint' in cfg:
+        endpoint = cfg['endpoint']
+    if not endpoint:
+        region = cfg['region']
+        endpoint = 'oss-cn-%s-internal.aliyuncs.com' % region
+
+    host = endpoint
+
+    from seafobj.backends.alioss import OSSConf
+    conf = OSSConf(key_id, key, bucket, host)
+
+    return conf
+
 def get_swift_conf(cfg, section):
     user_name = cfg.get(section, 'user_name')
     password = cfg.get(section, 'password')
@@ -291,6 +311,10 @@ class SeafObjStoreFactory(object):
                 from seafobj.backends.ceph import SeafObjStoreCeph
                 ceph_conf = get_ceph_conf_from_json(bend[obj_type])
                 self.obj_stores[obj_type][storage_id] = SeafObjStoreCeph(compressed, ceph_conf, crypto)
+            elif bend[obj_type]['backend'] == 'oss':
+                from seafobj.backends.alioss import SeafObjStoreOSS
+                oss_conf = get_oss_conf_from_json(bend[obj_type])
+                self.obj_stores[obj_type][storage_id] = SeafObjStoreOSS(compressed, oss_conf, crypto)
             else:
                 raise InvalidConfigError('Unknown backend type: %s.' % bend[obj_type]['backend'])
 
