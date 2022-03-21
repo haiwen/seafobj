@@ -21,6 +21,16 @@ class AbstractObjStore(object):
 
         return data
 
+    def read_decrypted(self, repo_id, version, obj_id):
+        try:
+            data = self.read_obj_raw(repo_id, version, obj_id)
+            if self.crypto:
+                data = self.crypto.dec_data(data)
+        except Exception as e:
+            raise GetObjectError('Failed to read decrypted object %s/%s: %s' % (repo_id, obj_id, e))
+
+        return data
+
     def read_obj_raw(self, repo_id, version, obj_id):
         '''Read the raw content of the object from the backend. Each backend
         subclass should have their own implementation.
