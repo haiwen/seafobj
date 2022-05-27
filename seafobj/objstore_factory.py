@@ -417,10 +417,10 @@ def get_repo_storage_id(repo_id):
     else:
         from .db import Base
         from sqlalchemy.orm.scoping import scoped_session
-        RepoStorageId = Base.classes.RepoStorageId
+        repostorageid = Base.classes.repostorageid
         storage_id = None
         session = scoped_session(objstore_factory.session)
-        q = session.query(RepoStorageId).filter(RepoStorageId.repo_id==repo_id)
+        q = session.query(repostorageid).filter(repostorageid.repo_id==repo_id)
         r = q.first()
         storage_id = r.storage_id if r else None
         repo_storage_id[repo_id] = storage_id
