@@ -13,9 +13,11 @@ except:
     pass
 
 class OSSConf(object):
-    def __init__(self, key_id, key, bucket_name, host):
-        self.key_id = key_id
-        self.key = key
+    def __init__(self, read_key_id, read_key, write_key_id, write_key, bucket_name, host):
+        self.read_key_id = read_key_id
+        self.read_key = read_key
+        self.write_key_id = write_key_id
+        self.write_key = write_key
         self.bucket_name = bucket_name
         self.host = host
 
@@ -24,12 +26,15 @@ class SeafOSSClient(object):
     def __init__(self, conf):
         self.conf = conf
         # Due to a bug in httplib we can't use https
-        self.auth = oss2.Auth(conf.key_id, conf.key)
-        self.service = oss2.Service(self.auth, conf.host)
-        self.bucket = oss2.Bucket(self.auth, conf.host, conf.bucket_name)
+        self.read_auth = oss2.Auth(conf.read_key_id, conf.read_key)
+        self.read_service = oss2.Service(self.read_auth, conf.host)
+        self.read_bucket = oss2.Bucket(self.read_auth, conf.host, conf.bucket_name)
+        self.write_auth = oss2.Auth(conf.write_key_id, conf.write_key)
+        self.write_service = oss2.Service(self.write_auth, conf.host)
+        self.write_bucket = oss2.Bucket(self.write_auth, conf.host, conf.bucket_name)
 
     def read_object_content(self, obj_id):
-        res = self.bucket.get_object(obj_id)
+        res = self.read_bucket.get_object(obj_id)
         return res.read()
 
 class SeafObjStoreOSS(AbstractObjStore):
@@ -51,9 +56,9 @@ class SeafObjStoreOSS(AbstractObjStore):
         next_marker = ''
         while True:
             if repo_id:
-                Simp_obj_info = self.oss_client.bucket.list_objects(repo_id, '',next_marker)
+                Simp_obj_info = self.oss_client.read_bucket.list_objects(repo_id, '',next_marker)
             else:
-                Simp_obj_info = self.oss_client.bucket.list_objects('', '', next_marker)
+                Simp_obj_info = self.oss_client.read_bucket.list_objects('', '', next_marker)
 
             object_list = Simp_obj_info.object_list
 
@@ -74,19 +79,19 @@ class SeafObjStoreOSS(AbstractObjStore):
     def obj_exists(self, repo_id, obj_id):
         key = '%s/%s' % (repo_id, obj_id)
 
-        return self.oss_client.bucket.object_exists(key)
+        return self.oss_client.read_bucket.object_exists(key)
 
     def write_obj(self, data, repo_id, obj_id):
         key = '%s/%s' % (repo_id, obj_id)
 
-        self.oss_client.bucket.put_object(key, data)
+        self.oss_client.write_bucket.put_object(key, data)
 
     def remove_obj(self, repo_id, obj_id):
         key = '%s/%s' % (repo_id, obj_id)
 
-        self.oss_client.bucket.delete_object(key)
+        self.oss_client.write_bucket.delete_object(key)
     
     def stat_raw(self, repo_id, obj_id):
         key = '%s/%s' % (repo_id, obj_id)
         
-        return self.oss_client.bucket.get_object_meta(key).headers['Size']
+        return self.oss_client.read_bucket.get_object_meta(key).headers['Size']
