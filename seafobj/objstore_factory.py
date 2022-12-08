@@ -125,10 +125,14 @@ def get_oss_conf(cfg, section):
     use_crypt = False
     if cfg.has_option('general', 'use_crypt'):
         use_crypt = cfg.getboolean('general', 'use_crypt')
-    key_id = cfg.get(section, 'key_id')
-    key = cfg.get(section, 'key')
+    read_key_id = cfg.get(section, 'read_key_id')
+    read_key = cfg.get(section, 'read_key')
     if use_crypt:
-        key = seafile_api.seafile_decrypt(key)
+        read_key = seafile_api.seafile_decrypt(read_key)
+    write_key_id = cfg.get(section, 'write_key_id')
+    write_key = cfg.get(section, 'write_key')
+    if use_crypt:
+        write_key = seafile_api.seafile_decrypt(write_key)
     bucket = cfg.get(section, 'bucket')
     endpoint = ''
     if cfg.has_option(section, 'endpoint'):
@@ -140,15 +144,19 @@ def get_oss_conf(cfg, section):
     host = endpoint
 
     from seafobj.backends.alioss import OSSConf
-    conf = OSSConf(key_id, key, bucket, host)
+    conf = OSSConf(read_key_id, read_key, write_key_id, write_key, bucket, host)
 
     return conf
 
 def get_oss_conf_from_json(cfg, use_crypt):
-    key_id = cfg['key_id']
-    key = cfg['key']
+    read_key_id = cfg['read_key_id']
+    read_key = cfg['read_key']
     if use_crypt:
-        key = seafile_api.seafile_decrypt(key)
+        read_key = seafile_api.seafile_decrypt(read_key)
+    write_key_id = cfg['write_key_id']
+    write_key = cfg['write_key']
+    if use_crypt:
+        write_key = seafile_api.seafile_decrypt(write_key)
     bucket = cfg['bucket']
 
     endpoint = ''
@@ -162,7 +170,7 @@ def get_oss_conf_from_json(cfg, use_crypt):
     host = endpoint
 
     from seafobj.backends.alioss import OSSConf
-    conf = OSSConf(key_id, key, bucket, host)
+    conf = OSSConf(read_key_id, read_key, write_key_id, write_key, bucket, host)
 
     return conf
 
