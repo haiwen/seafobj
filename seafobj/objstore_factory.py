@@ -129,8 +129,12 @@ def get_oss_conf(cfg, section):
 
     host = endpoint
 
+    use_https = False
+    if cfg.has_option(section, 'use_https'):
+        use_https = cfg.getboolean(section, 'use_https')
+
     from seafobj.backends.alioss import OSSConf
-    conf = OSSConf(key_id, key, bucket, host)
+    conf = OSSConf(key_id, key, bucket, host, use_https)
 
     return conf
 
@@ -149,8 +153,13 @@ def get_oss_conf_from_json(cfg):
 
     host = endpoint
 
+    use_https = False
+    if 'use_https' in cfg:
+        if str(cfg['use_https']).lower().strip() == 'true':
+            use_https = True
+
     from seafobj.backends.alioss import OSSConf
-    conf = OSSConf(key_id, key, bucket, host)
+    conf = OSSConf(key_id, key, bucket, host, use_https)
 
     return conf
 
