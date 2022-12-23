@@ -13,25 +13,30 @@ except:
     pass
 
 class OSSConf(object):
-    def __init__(self, read_key_id, read_key, write_key_id, write_key, bucket_name, host):
+    def __init__(self, read_key_id, read_key, write_key_id, write_key, bucket_name, host, use_https):
         self.read_key_id = read_key_id
         self.read_key = read_key
         self.write_key_id = write_key_id
         self.write_key = write_key
         self.bucket_name = bucket_name
         self.host = host
+        self.use_https = use_https
 
 class SeafOSSClient(object):
     '''Wraps a oss connection and a bucket'''
     def __init__(self, conf):
         self.conf = conf
+        if conf.use_https:
+            host = 'https://%s' % conf.host
+        else:
+            host = 'http://%s' % conf.host
         # Due to a bug in httplib we can't use https
         self.read_auth = oss2.Auth(conf.read_key_id, conf.read_key)
-        self.read_service = oss2.Service(self.read_auth, conf.host)
-        self.read_bucket = oss2.Bucket(self.read_auth, conf.host, conf.bucket_name)
+        self.read_service = oss2.Service(self.read_auth, host)
+        self.read_bucket = oss2.Bucket(self.read_auth, host, conf.bucket_name)
         self.write_auth = oss2.Auth(conf.write_key_id, conf.write_key)
-        self.write_service = oss2.Service(self.write_auth, conf.host)
-        self.write_bucket = oss2.Bucket(self.write_auth, conf.host, conf.bucket_name)
+        self.write_service = oss2.Service(self.write_auth, host)
+        self.write_bucket = oss2.Bucket(self.write_auth, host, conf.bucket_name)
 
     def read_object_content(self, obj_id):
         res = self.read_bucket.get_object(obj_id)
