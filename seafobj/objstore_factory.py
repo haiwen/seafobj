@@ -4,6 +4,8 @@ import binascii
 import logging
 import json
 
+from sqlalchemy import select
+
 from seafobj.exceptions import InvalidConfigError
 from seafobj.backends.filesystem import SeafObjStoreFS
 
@@ -393,8 +395,7 @@ def get_repo_storage_id(repo_id):
         RepoStorageId = Base.classes.RepoStorageId
         storage_id = None
         session = scoped_session(objstore_factory.session)
-        q = session.query(RepoStorageId).filter(RepoStorageId.repo_id==repo_id)
-        r = q.first()
+        r = session.execute(select(RepoStorageId).where(RepoStorageId.repo_id == repo_id).limit(1)).first()
         storage_id = r.storage_id if r else None
         repo_storage_id[repo_id] = storage_id
         session.remove()
