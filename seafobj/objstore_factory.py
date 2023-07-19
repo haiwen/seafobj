@@ -395,7 +395,7 @@ def get_repo_storage_id(repo_id):
         RepoStorageId = Base.classes.RepoStorageId
         storage_id = None
         session = scoped_session(objstore_factory.session)
-        r = session.execute(select(RepoStorageId).where(RepoStorageId.repo_id == repo_id).limit(1)).first()
+        r = session.scalars(select(RepoStorageId).where(RepoStorageId.repo_id == repo_id).limit(1)).first()
         storage_id = r.storage_id if r else None
         repo_storage_id[repo_id] = storage_id
         session.remove()
