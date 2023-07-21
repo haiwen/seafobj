@@ -9,7 +9,6 @@ from sqlalchemy.event import contains as has_event_listener, listen as add_event
 from sqlalchemy.exc import DisconnectionError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import Pool
-from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.ext.automap import automap_base
 
 # Automatically generate mapped classes and relationships from a database schema
@@ -84,7 +83,7 @@ def init_db_session_class(config):
         raise RuntimeError("invalid seafile config.")
 
     # reflect the tables
-    Base.prepare(engine, reflect=True)
+    Base.prepare(autoload_with=engine)
 
     Session = sessionmaker(bind=engine)
     return Session
