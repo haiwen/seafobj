@@ -357,7 +357,7 @@ class SeafObjStoreFactory(object):
             return SeafObjStoreFS(compressed, obj_dir, crypto)
 
         elif backend_name == 's3':
-            # We import s3 backend here to avoid depenedency on boto for users
+            # We import s3 backend here to avoid dependency on boto3 for users
             # not using s3
             from seafobj.backends.s3 import SeafObjStoreS3
             s3_conf = get_s3_conf(cfg, section)
