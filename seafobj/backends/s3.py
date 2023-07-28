@@ -1,8 +1,8 @@
+import boto3
+from botocore.exceptions import ClientError
+
 from .base import AbstractObjStore
 
-import boto
-import boto.s3.connection
-from boto.s3.key import Key
 
 class S3Conf(object):
     def __init__(self, key_id, key, bucket_name, host, port, use_v4_sig, aws_region, use_https, path_style_request):
@@ -16,51 +16,50 @@ class S3Conf(object):
         self.use_https = use_https
         self.path_style_request = path_style_request
 
+
 class SeafS3Client(object):
-    '''Wraps a s3 connection and a bucket'''
+    """Wraps a s3 connection and a bucket"""
     def __init__(self, conf):
         self.conf = conf
-        self.conn = None
+        self.client = None
         self.bucket = None
 
     def do_connect(self):
-        if self.conf.path_style_request:
-            calling_format=boto.s3.connection.OrdinaryCallingFormat()
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html
+        if self.conf.use_v4_sig:
+            config = boto3.session.Config(signature_version='s3v4')
         else:
-            calling_format=boto.s3.connection.SubdomainCallingFormat()
+            config = boto3.session.Config(signature_version='s3')
 
         if self.conf.host is None:
-            # If version 4 signature is used, boto requires 'host' parameter
-            # Also there is a bug in AWS Frankfurt that causes boto doesn't work.
-            # The current work around is to give specific service address, like
-            # s3.eu-central-1.amazonaws.com instead of s3.amazonaws.com.
-            if self.conf.use_v4_sig:
-                self.conn = boto.connect_s3(self.conf.key_id, self.conf.key,
-                                            host='s3.%s.amazonaws.com' % self.conf.aws_region,
-                                            is_secure=self.conf.use_https,
-                                            calling_format=calling_format)
-            else:
-                self.conn = boto.connect_s3(self.conf.key_id, self.conf.key, is_secure=self.conf.use_https,
-                                            calling_format=calling_format)
+            self.client = boto3.client('s3',
+                                       region_name=self.conf.aws_region,
+                                       aws_access_key_id=self.conf.key_id,
+                                       aws_secret_access_key=self.conf.key,
+                                       use_ssl=self.conf.use_https,
+                                       config=config)
         else:
-            self.conn = boto.connect_s3(self.conf.key_id, self.conf.key,
-                                        host='%s' % self.conf.host,
-                                        port=self.conf.port,
-                                        is_secure=self.conf.use_https,
-                                        calling_format=calling_format)
+            # https://github.com/boto/boto3/blob/1.28.12/boto3/session.py#L265
+            endpoint_url = 'https://%s' % self.conf.host if self.conf.use_https else 'http://%s' % self.conf.host
+            self.client = boto3.client('s3',
+                                       region_name=self.conf.aws_region,
+                                       aws_access_key_id=self.conf.key_id,
+                                       aws_secret_access_key=self.conf.key,
+                                       endpoint_url=endpoint_url,
+                                       config=config)
 
-        self.bucket = self.conn.get_bucket(self.conf.bucket_name)
+        self.bucket = self.conf.bucket_name
 
     def read_object_content(self, obj_id):
-        if not self.conn:
+        if not self.client or not self.bucket:
             self.do_connect()
 
-        k = Key(bucket=self.bucket, name=obj_id)
+        obj = self.client.get_object(Bucket=self.bucket, Key=obj_id)
+        return obj.get('Body').read()
 
-        return k.get_contents_as_string()
 
 class SeafObjStoreS3(AbstractObjStore):
-    '''S3 backend for seafile objecs'''
+    """S3 backend for seafile objects"""
     def __init__(self, compressed, s3_conf, crypto=None):
         AbstractObjStore.__init__(self, compressed, crypto)
         self.s3_client = SeafS3Client(s3_conf)
@@ -74,59 +73,74 @@ class SeafObjStoreS3(AbstractObjStore):
         return 'S3 storage backend'
 
     def list_objs(self, repo_id=None):
-
-        if not self.s3_client.conn:
+        if not self.s3_client.client or not self.s3_client.bucket:
             self.s3_client.do_connect()
 
-        if repo_id:
-            keys = self.s3_client.bucket.list(prefix=repo_id)
-        else:
-            keys = self.s3_client.bucket.list()
+        start_after = ''
+        while True:
+            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3/client/list_objects_v2.html
+            if repo_id:
+                keys = self.s3_client.client.list_objects_v2(Bucket=self.s3_client.bucket, StartAfter=start_after,
+                                                             Prefix=repo_id)
+            else:
+                keys = self.s3_client.client.list_objects_v2(Bucket=self.s3_client.bucket, StartAfter=start_after)
 
-        for key in keys:
-            tokens = key.name.split('/')
-            if len(tokens) == 2:
-                _repo_id = tokens[0]
-                obj_id = tokens[1]
-                obj = [_repo_id, obj_id, 0]
-                yield obj
+            if len(keys) == 0:
+                break
+
+            for key in keys:
+                tokens = key.get('Key', '').split('/')
+                if len(tokens) == 2:
+                    repo_id = tokens[0]
+                    obj_id = tokens[1]
+                    obj = [repo_id, obj_id, key.get('Size', 0)]
+                    yield obj
+
+            # The return of list_objects_v2() is a list, each element is a dict,
+            # and each dict must contain the 'Key'.
+            # Use the 'Key' of the last dict as the 'StartAfter' parameter of the next list_objects_v2().
+            # If the dict does not contain 'Key', terminate the loop,
+            # otherwise will fall into an infinite loop
+            start_after = keys[-1].get('Key', '')
+            if start_after == '':
+                break
 
     def obj_exists(self, repo_id, obj_id):
-        if not self.s3_client.conn or not self.s3_client.bucket:
+        if not self.s3_client.client or not self.s3_client.bucket:
             self.s3_client.do_connect()
 
         bucket = self.s3_client.bucket
         s3_path = '%s/%s' % (repo_id, obj_id)
-        key = Key(bucket=bucket, name=s3_path)
-        exists = key.exists()
-        self.dest_key = key
+        try:
+            self.s3_client.client.head_object(Bucket=bucket, Key=s3_path)
+            exists = True
+        except ClientError:
+            exists = False
 
         return exists
 
     def write_obj(self, data, repo_id, obj_id):
-        if not self.s3_client.conn or not self.s3_client.bucket:
+        if not self.s3_client.client or not self.s3_client.bucket:
             self.s3_client.do_connect()
 
         bucket = self.s3_client.bucket
         s3_path = '%s/%s' % (repo_id, obj_id)
-        key = Key(bucket=bucket, name=s3_path)
-        key.set_contents_from_string(data)
+        self.s3_client.client.put_object(Bucket=bucket, Key=s3_path, Body=data)
 
     def remove_obj(self, repo_id, obj_id):
-        if not self.s3_client.conn or not self.s3_client.bucket:
+        if not self.s3_client.client or not self.s3_client.bucket:
             self.s3_client.do_connect()
 
         bucket = self.s3_client.bucket
         s3_path = '%s/%s' % (repo_id, obj_id)
-        key = Key(bucket=bucket, name=s3_path)
-        bucket.delete_key(key)
-    
+        self.s3_client.client.delete_object(Bucket=bucket, Key=s3_path)
+
     def stat_raw(self, repo_id, obj_id):
-        if not self.s3_client.conn or not self.s3_client.bucket:
+        if not self.s3_client.client or not self.s3_client.bucket:
             self.s3_client.do_connect()
 
         bucket = self.s3_client.bucket
         s3_path = '%s/%s' % (repo_id, obj_id)
-        key = Key(bucket=bucket, name=s3_path)
-        key.open_read()
-        return key.size
+        obj = self.s3_client.client.get_object(Bucket=bucket, Key=s3_path)
+        size = int(obj.get('ContentLength'))
+        return size
