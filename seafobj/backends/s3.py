@@ -76,18 +76,34 @@ class SeafObjStoreS3(AbstractObjStore):
         if not self.s3_client.client or not self.s3_client.bucket:
             self.s3_client.do_connect()
 
-        if repo_id:
-            keys = self.s3_client.client.list_objects(Bucket=self.s3_client.bucket, Prefix=repo_id)
-        else:
-            keys = self.s3_client.client.list_objects(Bucket=self.s3_client.bucket)
+        start_after = ''
+        while True:
+            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3/client/list_objects_v2.html
+            if repo_id:
+                keys = self.s3_client.client.list_objects_v2(Bucket=self.s3_client.bucket, StartAfter=start_after,
+                                                             Prefix=repo_id)
+            else:
+                keys = self.s3_client.client.list_objects_v2(Bucket=self.s3_client.bucket, StartAfter=start_after)
 
-        for key in keys:
-            tokens = key.get('Key', '').split('/')
-            if len(tokens) == 2:
-                _repo_id = tokens[0]
-                obj_id = tokens[1]
-                obj = [_repo_id, obj_id, 0]
-                yield obj
+            if len(keys) == 0:
+                break
+
+            for key in keys:
+                tokens = key.get('Key', '').split('/')
+                if len(tokens) == 2:
+                    repo_id = tokens[0]
+                    obj_id = tokens[1]
+                    obj = [repo_id, obj_id, key.get('Size', 0)]
+                    yield obj
+
+            # The return of list_objects_v2() is a list, each element is a dict,
+            # and each dict must contain the 'Key'.
+            # Use the 'Key' of the last dict as the 'StartAfter' parameter of the next list_objects_v2().
+            # If the dict does not contain 'Key', terminate the loop,
+            # otherwise will fall into an infinite loop
+            start_after = keys[-1].get('Key', '')
+            if start_after == '':
+                break
 
     def obj_exists(self, repo_id, obj_id):
         if not self.s3_client.client or not self.s3_client.bucket:
