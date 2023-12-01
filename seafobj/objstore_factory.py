@@ -56,10 +56,10 @@ def get_s3_conf(cfg, section):
         use_v4_sig = cfg.getboolean(section, 'use_v4_signature')
 
     aws_region = None
-    if use_v4_sig:
-        if not cfg.has_option(section, 'aws_region'):
-            raise InvalidConfigError('aws_region is not configured')
+    if cfg.has_option(section, 'aws_region'):
         aws_region = cfg.get(section, 'aws_region')
+    if not host and not aws_region:
+        raise InvalidConfigError('aws_region and host are not configured')
 
     use_https = False
     if cfg.has_option(section, 'use_https'):

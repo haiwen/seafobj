@@ -39,7 +39,7 @@ class SeafS3Client(object):
                                        use_ssl=self.conf.use_https,
                                        config=config)
         else:
-            # https://github.com/boto/boto3/blob/1.28.12/boto3/session.py#L265
+            # https://github.com/boto/boto3/blob/master/boto3/session.py#L265
             endpoint_url = 'https://%s' % self.conf.host if self.conf.use_https else 'http://%s' % self.conf.host
             self.client = boto3.client('s3',
                                        aws_access_key_id=self.conf.key_id,
@@ -79,29 +79,29 @@ class SeafObjStoreS3(AbstractObjStore):
         while True:
             # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3/client/list_objects_v2.html
             if repo_id:
-                keys = self.s3_client.client.list_objects_v2(Bucket=self.s3_client.bucket, StartAfter=start_after,
-                                                             Prefix=repo_id)
+                objects = self.s3_client.client.list_objects_v2(Bucket=self.s3_client.bucket, StartAfter=start_after,
+                                                                Prefix=repo_id)
             else:
-                keys = self.s3_client.client.list_objects_v2(Bucket=self.s3_client.bucket, StartAfter=start_after)
+                objects = self.s3_client.client.list_objects_v2(Bucket=self.s3_client.bucket, StartAfter=start_after)
 
-            if len(keys) == 0:
+            if len(objects.get('Contents', [])) == 0:
                 break
 
-            for key in keys:
-                tokens = key.get('Key', '').split('/')
+            for content in objects.get('Contents', []):
+                tokens = content.get('Key', '').split('/')
                 if len(tokens) == 2:
                     repo_id = tokens[0]
                     obj_id = tokens[1]
-                    obj = [repo_id, obj_id, key.get('Size', 0)]
+                    obj = [repo_id, obj_id, content.get('Size', 0)]
                     yield obj
 
-            # The return of list_objects_v2() is a list, each element is a dict,
+            # The 'Contents' of response is a list, each element is a dict,
             # and each dict must contain the 'Key'.
             # Use the 'Key' of the last dict as the 'StartAfter' parameter of the next list_objects_v2().
             # If the dict does not contain 'Key', terminate the loop,
             # otherwise will fall into an infinite loop
-            start_after = keys[-1].get('Key', '')
-            if start_after == '':
+            start_after = objects.get('Contents', [])[-1].get('Key', '')
+            if not objects.get('IsTruncated', False) or not start_after:
                 break
 
     def obj_exists(self, repo_id, obj_id):
