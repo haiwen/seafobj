@@ -41,7 +41,7 @@ class SeafDirent(object):
 
     @staticmethod
     def fromV0(name, type, id):
-        return SeafDirent(name, type, id, -1, -1)
+        return SeafDirent(name.decode(encoding='utf-8'), type, id.decode(encoding='utf-8'), -1, -1)
 
     @staticmethod
     def fromV1(name, type, id, mtime, size):
