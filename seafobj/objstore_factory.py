@@ -23,10 +23,10 @@ def get_ceph_conf(cfg, section):
 def get_ceph_conf_from_json(cfg):
     config_file = cfg['ceph_config']
     pool_name = cfg['pool']
-    ceph_client_id = None
+    ceph_client_id = ''
 
     if 'ceph_client_id' in cfg:
-        host = cfg['ceph_client_id']
+        ceph_client_id = cfg['ceph_client_id']
 
     from seafobj.backends.ceph import CephConf
     conf = CephConf(config_file, pool_name, ceph_client_id)
