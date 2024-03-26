@@ -13,16 +13,21 @@ except:
     pass
 
 class OSSConf(object):
-    def __init__(self, key_id, key, bucket_name, host):
+    def __init__(self, key_id, key, bucket_name, host, use_https):
         self.key_id = key_id
         self.key = key
         self.bucket_name = bucket_name
         self.host = host
+        self.use_https = use_https
 
 class SeafOSSClient(object):
     '''Wraps a oss connection and a bucket'''
     def __init__(self, conf):
         self.conf = conf
+        if conf.use_https:
+            host = 'https://%s' % conf.host
+        else:
+            host = 'http://%s' % conf.host
         # Due to a bug in httplib we can't use https
         self.auth = oss2.Auth(conf.key_id, conf.key)
         self.service = oss2.Service(self.auth, conf.host)
