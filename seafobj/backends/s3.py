@@ -41,6 +41,8 @@ class SeafS3Client(object):
         else:
             # https://github.com/boto/boto3/blob/master/boto3/session.py#L265
             endpoint_url = 'https://%s' % self.conf.host if self.conf.use_https else 'http://%s' % self.conf.host
+            if self.conf.port:
+                endpoint_url = '%s:%s' % (endpoint_url, self.conf.port)
             self.client = boto3.client('s3',
                                        aws_access_key_id=self.conf.key_id,
                                        aws_secret_access_key=self.conf.key,
