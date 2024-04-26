@@ -13,3 +13,4 @@ cover
 .#*
 pkg.ini
 .emacs*
+/.idea
