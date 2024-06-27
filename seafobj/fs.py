@@ -22,12 +22,13 @@ class SeafDirent(object):
     '''An entry in a SeafDir'''
     DIR = 0
     FILE = 1
-    def __init__(self, name, type, id, mtime, size):
+    def __init__(self, name, type, id, mtime, size, modifier):
         self.name = name
         self.type = type
         self.id = id
         self.mtime = mtime
         self.size = size
+        self.modifier = modifier
 
     def is_file(self):
         return self.type == SeafDirent.FILE
@@ -36,16 +37,16 @@ class SeafDirent(object):
         return self.type == SeafDirent.DIR
 
     def __str__(self):
-        return 'SeafDirent(type=%s, name=%s, size=%s, id=%s, mtime=%s)' % \
-            ('dir' if self.type == SeafDirent.DIR else 'file', self.name, self.size, self.id, self.mtime)
+        return 'SeafDirent(type=%s, name=%s, size=%s, id=%s, mtime=%s, modifier=%s)' % \
+            ('dir' if self.type == SeafDirent.DIR else 'file', self.name, self.size, self.id, self.mtime, self.modifier)
 
     @staticmethod
-    def fromV0(name, type, id):
-        return SeafDirent(name.decode(encoding='utf-8'), type, id.decode(encoding='utf-8'), -1, -1)
+    def fromV0(name, type, id, modifier):
+        return SeafDirent(name.decode(encoding='utf-8'), type, id.decode(encoding='utf-8'), -1, -1, modifier)
 
     @staticmethod
-    def fromV1(name, type, id, mtime, size):
-        return SeafDirent(name, type, id, mtime, size)
+    def fromV1(name, type, id, mtime, size, modifier):
+        return SeafDirent(name, type, id, mtime, size, modifier)
 
 
 class SeafDir(object):
@@ -236,9 +237,9 @@ class SeafFSManager(object):
             off += struct.calcsize(fmt)
 
             if stat.S_ISREG(mode):
-                dirents[name] = SeafDirent.fromV0(name, SeafDirent.FILE, eid)
+                dirents[name] = SeafDirent.fromV0(name, SeafDirent.FILE, eid, '')
             elif stat.S_ISDIR(mode):
-                dirents[name] = SeafDirent.fromV0(name, SeafDirent.DIR, eid)
+                dirents[name] = SeafDirent.fromV0(name, SeafDirent.DIR, eid, '')
             else:
                 logger.warning('Error: unknown object mode %s', mode)
             if off > len(data) - 48:
@@ -260,12 +261,14 @@ class SeafFSManager(object):
             if stat.S_ISREG(mode):
                 type = SeafDirent.FILE
                 size = entry['size']
+                modifier = entry['modifier']
             elif stat.S_ISDIR(mode):
                 type = SeafDirent.DIR
                 size = 0
+                modifier = ''
             else:
                 continue
-            dirents[name] = SeafDirent.fromV1(name, type, id, mtime, size)
+            dirents[name] = SeafDirent.fromV1(name, type, id, mtime, size, modifier)
 
         return dirents
 
