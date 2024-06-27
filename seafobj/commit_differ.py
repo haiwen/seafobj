@@ -7,11 +7,13 @@ ZERO_OBJ_ID = '0000000000000000000000000000000000000000'
 
 
 class DiffEntry(object):
-    def __init__(self, path, obj_id, size=-1, new_path=None):
+    def __init__(self, path, obj_id, size=-1, new_path=None, modifier=None, mtime=None):
         self.path = path
         self.new_path = new_path
         self.obj_id = obj_id
         self.size = size
+        self.modifier = modifier
+        self.mtime = mtime
 
 class CommitDiffer(object):
     def __init__(self, repo_id, version, root1, root2, handle_rename=False, fold_dirs=False):
@@ -70,20 +72,20 @@ class CommitDiffer(object):
             for dent in dir1.get_files_list():
                 new_dent = dir2.lookup_dent(dent.name)
                 if not new_dent or new_dent.type != dent.type:
-                    deleted_files.append(DiffEntry(make_path(path, dent.name), dent.id, dent.size))
+                    deleted_files.append(DiffEntry(make_path(path, dent.name), dent.id, dent.size, modifier=dent.modifier, mtime=dent.mtime))
                 else:
                     dir2.remove_entry(dent.name)
                     if new_dent.id == dent.id:
                         pass
                     else:
-                        modified_files.append(DiffEntry(make_path(path, dent.name), new_dent.id, new_dent.size))
+                        modified_files.append(DiffEntry(make_path(path, dent.name), new_dent.id, new_dent.size, modifier=new_dent.modifier, mtime=new_dent.mtime))
 
-            added_files.extend([DiffEntry(make_path(path, dent.name), dent.id, dent.size) for dent in dir2.get_files_list()])
+            added_files.extend([DiffEntry(make_path(path, dent.name), dent.id, dent.size, modifier=dent.modifier, mtime=dent.mtime) for dent in dir2.get_files_list()])
 
             for dent in dir1.get_subdirs_list():
                 new_dent = dir2.lookup_dent(dent.name)
                 if not new_dent or new_dent.type != dent.type:
-                    del_dirs.append(DiffEntry(make_path(path, dent.name), dent.id))
+                    del_dirs.append(DiffEntry(make_path(path, dent.name), dent.id, mtime=dent.mtime))
                 else:
                     dir2.remove_entry(dent.name)
                     if new_dent.id == dent.id:
@@ -91,7 +93,7 @@ class CommitDiffer(object):
                     else:
                         queued_dirs.append((make_path(path, dent.name), dent.id, new_dent.id))
 
-            new_dirs.extend([DiffEntry(make_path(path, dent.name), dent.id) for dent in dir2.get_subdirs_list()])
+            new_dirs.extend([DiffEntry(make_path(path, dent.name), dent.id, mtime=dent.mtime) for dent in dir2.get_subdirs_list()])
 
         if not self.fold_dirs:
             while True:
@@ -99,24 +101,24 @@ class CommitDiffer(object):
                 # these dirs should be marked as added.
                 try:
                     dir_dent = new_dirs.pop(0)
-                    added_dirs.append(DiffEntry(dir_dent.path, dir_dent.obj_id))
+                    added_dirs.append(DiffEntry(dir_dent.path, dir_dent.obj_id, mtime=dir_dent.mtime))
                 except IndexError:
                     break
                 d = fs_mgr.load_seafdir(self.repo_id, self.version, dir_dent.obj_id)
-                added_files.extend([DiffEntry(make_path(dir_dent.path, dent.name), dent.id, dent.size) for dent in d.get_files_list()])
+                added_files.extend([DiffEntry(make_path(dir_dent.path, dent.name), dent.id, dent.size, modifier=dent.modifier, mtime=dent.mtime) for dent in d.get_files_list()])
 
-                new_dirs.extend([DiffEntry(make_path(dir_dent.path, dent.name), dent.id) for dent in d.get_subdirs_list()])
+                new_dirs.extend([DiffEntry(make_path(dir_dent.path, dent.name), dent.id, mtime=dent.mtime) for dent in d.get_subdirs_list()])
 
             while True:
                 try:
                     dir_dent = del_dirs.pop(0)
-                    deleted_dirs.append(DiffEntry(dir_dent.path, dir_dent.obj_id))
+                    deleted_dirs.append(DiffEntry(dir_dent.path, dir_dent.obj_id, mtime=dir_dent.mtime))
                 except IndexError:
                     break
                 d = fs_mgr.load_seafdir(self.repo_id, self.version, dir_dent.obj_id)
-                deleted_files.extend([DiffEntry(make_path(dir_dent.path, dent.name), dent.id, dent.size) for dent in d.get_files_list()])
+                deleted_files.extend([DiffEntry(make_path(dir_dent.path, dent.name), dent.id, dent.size, modifier=dent.modifier, mtime=dent.mtime) for dent in d.get_files_list()])
 
-                del_dirs.extend([DiffEntry(make_path(dir_dent.path, dent.name), dent.id) for dent in d.get_subdirs_list()])
+                del_dirs.extend([DiffEntry(make_path(dir_dent.path, dent.name), dent.id, mtime=dent.mtime) for dent in d.get_subdirs_list()])
 
         else:
             deleted_dirs = del_dirs
@@ -138,9 +140,9 @@ class CommitDiffer(object):
                     del_de = del_file_dict[de.obj_id]
                     if os.path.dirname(de.path) == os.path.dirname(del_de.path):
                         # it's a rename operation if add and del are in the same dir
-                        renamed_files.append(DiffEntry(del_de.path, de.obj_id, de.size, de.path))
+                        renamed_files.append(DiffEntry(del_de.path, de.obj_id, de.size, de.path, modifier=de.modifier, mtime=de.mtime))
                     else:
-                        moved_files.append(DiffEntry(del_de.path, de.obj_id, de.size, de.path))
+                        moved_files.append(DiffEntry(del_de.path, de.obj_id, de.size, de.path, modifier=de.modifier, mtime=de.mtime))
                     del del_file_dict[de.obj_id]
                 else:
                     ret_added_files.append(de)
@@ -154,9 +156,9 @@ class CommitDiffer(object):
                 if de.obj_id in del_dir_dict:
                     del_de = del_dir_dict[de.obj_id]
                     if os.path.dirname(de.path) == os.path.dirname(del_de.path):
-                        renamed_dirs.append(DiffEntry(del_de.path, de.obj_id, -1, de.path))
+                        renamed_dirs.append(DiffEntry(del_de.path, de.obj_id, -1, de.path, mtime=de.mtime))
                     else:
-                        moved_dirs.append(DiffEntry(del_de.path, de.obj_id, -1, de.path))
+                        moved_dirs.append(DiffEntry(del_de.path, de.obj_id, -1, de.path, mtime=de.mtime))
                     del del_dir_dict[de.obj_id]
                 else:
                     ret_added_dirs.append(de)
