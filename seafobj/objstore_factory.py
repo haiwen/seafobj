@@ -8,6 +8,8 @@ from sqlalchemy import select
 
 from seafobj.exceptions import InvalidConfigError
 from seafobj.backends.filesystem import SeafObjStoreFS
+from seafobj.mc import get_mc_cache
+from seafobj.redis_cache import get_redis_cache
 
 def get_ceph_conf(cfg, section):
     config_file = cfg.get(section, 'ceph_config')
@@ -267,6 +269,28 @@ class SeafileConfig(object):
             return os.path.join(self.seafile_conf_dir, 'storage')
         raise RuntimeError('environment SEAFILE_CONF_DIR not set correctly.');
 
+    def get_seaf_cache(self):
+        if self.cfg.has_option('redis', 'redis_host'):
+            host = self.cfg.get('redis', 'redis_host')
+            if self.cfg.has_option('redis', 'redis_port'):
+                port = self.cfg.get('redis', 'redis_port')
+            else:
+                port = 6379
+            if self.cfg.has_option('redis', 'redis_expiry'):
+                expiry = self.cfg.get('redis', 'redis_expiry')
+            else:
+                expiry = 24 * 3600
+            if self.cfg.has_option('redis', 'max_connections'):
+                max_connections = self.cfg.get('redis', 'max_connections')
+            else:
+                max_connections = 20
+            return get_redis_cache(host, port, expiry, max_connections)
+
+        if self.cfg.has_option('memcached', 'memcached_options'):
+            mc_options = self.cfg.get('memcached', 'memcached_options')
+            return get_mc_cache(mc_options)
+        return None
+
 class SeafObjStoreFactory(object):
     obj_section_map = {
         'blocks': 'block_backend',
@@ -306,6 +330,9 @@ class SeafObjStoreFactory(object):
 
             crypto = self.seafile_cfg.get_seaf_crypto()
             compressed = obj_type == 'fs'
+            cache = None
+            if obj_type != 'blocks':
+                cache = self.seafile_cfg.get_seaf_cache()
 
             if bend[obj_type]['backend'] == 'fs':
                 obj_dir = os.path.join(bend[obj_type]['dir'], 'storage', obj_type)
@@ -313,19 +340,19 @@ class SeafObjStoreFactory(object):
             elif bend[obj_type]['backend'] == 'swift':
                 from seafobj.backends.swift import SeafObjStoreSwift
                 swift_conf = get_swift_conf_from_json(bend[obj_type])
-                self.obj_stores[obj_type][storage_id] = SeafObjStoreSwift(compressed, swift_conf, crypto)
+                self.obj_stores[obj_type][storage_id] = SeafObjStoreSwift(compressed, swift_conf, crypto, cache)
             elif bend[obj_type]['backend'] == 's3':
                 from seafobj.backends.s3 import SeafObjStoreS3
                 s3_conf = get_s3_conf_from_json(bend[obj_type])
-                self.obj_stores[obj_type][storage_id] = SeafObjStoreS3(compressed, s3_conf, crypto)
+                self.obj_stores[obj_type][storage_id] = SeafObjStoreS3(compressed, s3_conf, crypto, cache)
             elif bend[obj_type]['backend'] == 'ceph':
                 from seafobj.backends.ceph import SeafObjStoreCeph
                 ceph_conf = get_ceph_conf_from_json(bend[obj_type])
-                self.obj_stores[obj_type][storage_id] = SeafObjStoreCeph(compressed, ceph_conf, crypto)
+                self.obj_stores[obj_type][storage_id] = SeafObjStoreCeph(compressed, ceph_conf, crypto, cache)
             elif bend[obj_type]['backend'] == 'oss':
                 from seafobj.backends.alioss import SeafObjStoreOSS
                 oss_conf = get_oss_conf_from_json(bend[obj_type])
-                self.obj_stores[obj_type][storage_id] = SeafObjStoreOSS(compressed, oss_conf, crypto)
+                self.obj_stores[obj_type][storage_id] = SeafObjStoreOSS(compressed, oss_conf, crypto, cache)
             else:
                 raise InvalidConfigError('Unknown backend type: %s.' % bend[obj_type]['backend'])
 
@@ -345,6 +372,9 @@ class SeafObjStoreFactory(object):
             raise RuntimeError('unknown obj_type ' + obj_type)
 
         crypto = self.seafile_cfg.get_seaf_crypto()
+        cache = None
+        if obj_type != 'blocks':
+            cache = self.seafile_cfg.get_seaf_cache()
 
         if cfg.has_option(section, 'name'):
             backend_name = cfg.get(section, 'name')
@@ -370,24 +400,24 @@ class SeafObjStoreFactory(object):
             # not using s3
             from seafobj.backends.s3 import SeafObjStoreS3
             s3_conf = get_s3_conf(cfg, section)
-            return SeafObjStoreS3(compressed, s3_conf, crypto)
+            return SeafObjStoreS3(compressed, s3_conf, crypto, cache)
 
         elif backend_name == 'ceph':
             # We import ceph backend here to avoid depenedency on rados for
             # users not using rados
             from seafobj.backends.ceph import SeafObjStoreCeph
             ceph_conf = get_ceph_conf(cfg, section)
-            return SeafObjStoreCeph(compressed, ceph_conf, crypto)
+            return SeafObjStoreCeph(compressed, ceph_conf, crypto, cache)
 
         elif backend_name == 'oss':
             from seafobj.backends.alioss import SeafObjStoreOSS
             oss_conf = get_oss_conf(cfg, section)
-            return SeafObjStoreOSS(compressed, oss_conf, crypto)
+            return SeafObjStoreOSS(compressed, oss_conf, crypto, cache)
 
         elif backend_name == 'swift':
             from seafobj.backends.swift import SeafObjStoreSwift
             swift_conf = get_swift_conf(cfg, section)
-            return SeafObjStoreSwift(compressed, swift_conf, crypto)
+            return SeafObjStoreSwift(compressed, swift_conf, crypto, cache)
 
         else:
             raise InvalidConfigError('unknown %s backend "%s"' % (obj_type, backend_name))

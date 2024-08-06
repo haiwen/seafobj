@@ -39,8 +39,8 @@ class SeafOSSClient(object):
 
 class SeafObjStoreOSS(AbstractObjStore):
     '''OSS backend for seafile objects'''
-    def __init__(self, compressed, oss_conf, crypto=None):
-        AbstractObjStore.__init__(self, compressed, crypto)
+    def __init__(self, compressed, oss_conf, crypto=None, cache=None):
+        AbstractObjStore.__init__(self, compressed, crypto, cache)
         self.oss_client = SeafOSSClient(oss_conf)
 
     def read_obj_raw(self, repo_id, version, obj_id):
