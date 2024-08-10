@@ -1,4 +1,4 @@
-from pymemcache.client.base import PooledClient
+import pylibmc
 import re
 
 class McCache(object):
@@ -6,7 +6,9 @@ class McCache(object):
         self.server = 'localhost'
         self.port = 11211
         self.parse_mc_options(mc_options)
-        self.client = PooledClient((self.server, self.port))
+        address = f"{self.server}:{self.port}"
+        self.client = pylibmc.Client([address], binary=True, behaviors={"tcp_nodelay": True,
+                                                                        "ketama": True})
 
     def parse_mc_options(self, mc_options):
         match = re.match('--SERVER\\s*=\\s*(\d+\.\d+\.\d+\.\d+):(\d+)', mc_options)
@@ -18,7 +20,7 @@ class McCache(object):
 
     def set_obj(self, repo_id, obj_id, value):
         key = '%s-%s' % (repo_id, obj_id)
-        self.client.set(key, value, expire=24*3600)
+        self.client.set(key, value, time=24*3600)
 
     def get_obj(self, repo_id, obj_id):
         key = '%s-%s' % (repo_id, obj_id)
