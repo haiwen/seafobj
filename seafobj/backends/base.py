@@ -5,13 +5,22 @@ from seafobj.exceptions import GetObjectError
 
 class AbstractObjStore(object):
     '''Base class of seafile object backend'''
-    def __init__(self, compressed, crypto=None):
+    def __init__(self, compressed, crypto=None, cache=None):
         self.compressed = compressed
         self.crypto = crypto
+        self.cache = cache
 
     def read_obj(self, repo_id, version, obj_id):
         try:
+            if self.cache:
+                data = self.cache.get_obj(repo_id, obj_id)
+                if data:
+                    if self.crypto:
+                        data = self.crypto.dec_data(data)
+                    return data
             data = self.read_obj_raw(repo_id, version, obj_id)
+            if self.cache and data:
+                self.cache.set_obj(repo_id, obj_id, data)
             if self.crypto:
                 data = self.crypto.dec_data(data)
             if self.compressed and version == 1:
@@ -23,7 +32,15 @@ class AbstractObjStore(object):
 
     def read_decrypted(self, repo_id, version, obj_id):
         try:
+            if self.cache:
+                data = self.cache.get_obj(repo_id, obj_id)
+                if data:
+                    if self.crypto:
+                        data = self.crypto.dec_data(data)
+                    return data
             data = self.read_obj_raw(repo_id, version, obj_id)
+            if self.cache and data:
+                self.cache.set_obj(repo_id, obj_id, data)
             if self.crypto:
                 data = self.crypto.dec_data(data)
         except Exception as e:

@@ -69,8 +69,8 @@ class SeafCephClient(object):
 
 class SeafObjStoreCeph(AbstractObjStore):
     '''Ceph backend for seafile objects'''
-    def __init__(self, compressed, ceph_conf, crypto=None):
-        AbstractObjStore.__init__(self, compressed, crypto)
+    def __init__(self, compressed, ceph_conf, crypto=None, cache=None):
+        AbstractObjStore.__init__(self, compressed, crypto, cache)
         self.ceph_client = SeafCephClient(ceph_conf)
 
     def read_obj_raw(self, repo_id, version, obj_id):
