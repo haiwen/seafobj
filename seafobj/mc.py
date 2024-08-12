@@ -7,8 +7,7 @@ class McCache(object):
         self.port = 11211
         self.parse_mc_options(mc_options)
         address = f"{self.server}:{self.port}"
-        self.client = pylibmc.Client([address], binary=True, behaviors={"tcp_nodelay": True,
-                                                                        "ketama": True})
+        self.client = pylibmc.Client([address], binary=True, behaviors={"tcp_nodelay": True})
 
     def parse_mc_options(self, mc_options):
         match = re.match('--SERVER\\s*=\\s*(\d+\.\d+\.\d+\.\d+):(\d+)', mc_options)
