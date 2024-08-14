@@ -17,6 +17,8 @@ class AbstractObjStore(object):
                 if data:
                     if self.crypto:
                         data = self.crypto.dec_data(data)
+                    if self.compressed and version == 1:
+                        data = zlib.decompress(data)
                     return data
             data = self.read_obj_raw(repo_id, version, obj_id)
             if self.cache and data:
