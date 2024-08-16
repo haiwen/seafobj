@@ -28,7 +28,7 @@ class SeafS3Client(object):
         # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html
         addressing_style = 'virtual'
         if self.conf.path_style_request:
-            addressinng_style = 'path'
+            addressing_style = 'path'
         if self.conf.use_v4_sig:
             config = boto3.session.Config(signature_version='s3v4', s3={'addressing_style':addressing_style})
         else:
