@@ -7,12 +7,19 @@ class RedisCache(object):
         self.client = redis.StrictRedis(connection_pool=pool)
 
     def set_obj(self, repo_id, obj_id, value):
-        key = '%s-%s' % (repo_id, obj_id)
-        self.client.set(key, value, ex=self.expiry)
+        try:
+            key = '%s-%s' % (repo_id, obj_id)
+            self.client.set(key, value, ex=self.expiry)
+        except Exception:
+            return
 
     def get_obj(self, repo_id, obj_id):
-        key = '%s-%s' % (repo_id, obj_id)
-        return self.client.get(key)
+        try:
+            key = '%s-%s' % (repo_id, obj_id)
+            data = self.client.get(key)
+            return data
+        except Exception:
+            return None
 
 def get_redis_cache(host, port, expiry, max_connections):
     return RedisCache(host, port, expiry, max_connections)

@@ -18,12 +18,19 @@ class McCache(object):
                 self.port = int(port)
 
     def set_obj(self, repo_id, obj_id, value):
-        key = '%s-%s' % (repo_id, obj_id)
-        self.client.set(key, value, time=24*3600)
+        try:
+            key = '%s-%s' % (repo_id, obj_id)
+            self.client.set(key, value, time=24*3600)
+        except Exception:
+            return
 
     def get_obj(self, repo_id, obj_id):
-        key = '%s-%s' % (repo_id, obj_id)
-        return self.client.get(key)
+        try:
+            key = '%s-%s' % (repo_id, obj_id)
+            data = self.client.get(key)
+            return data
+        except Exception:
+            return None
 
 def get_mc_cache(mc_options):
     return McCache(mc_options)
