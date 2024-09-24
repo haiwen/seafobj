@@ -291,6 +291,11 @@ class SeafileConfig(object):
             return get_mc_cache(mc_options)
         return None
 
+# When using S3 as the storage backend, ensure the main thread is still active
+# during SeafObjStoreFactory initialization. If the main thread has exited,
+# creating the boto3 client may fail due to Python interpreter shutdown,
+# preventing boto3 from registering necessary atexit cleanup handlers,
+# which can lead to the "can't register atexit after shutdown" exception.
 class SeafObjStoreFactory(object):
     obj_section_map = {
         'blocks': 'block_backend',
