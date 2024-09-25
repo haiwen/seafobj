@@ -267,6 +267,8 @@ class SeafileConfig(object):
             return os.path.join(self.seafile_conf_dir, 'storage')
         raise RuntimeError('environment SEAFILE_CONF_DIR not set correctly.');
 
+# You must ensure that the SeafObjStoreFactory is created in the main thread.
+# If you're using a high-level wrapper like SeafCommitManager or SeafFSManager, it will automatically be created in the main thread.
 class SeafObjStoreFactory(object):
     obj_section_map = {
         'blocks': 'block_backend',
