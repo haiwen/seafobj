@@ -291,6 +291,9 @@ class SeafileConfig(object):
             return get_mc_cache(mc_options)
         return None
 
+# You must ensure that the SeafObjStoreFactory is created in the main thread.
+# If you're using a high-level wrapper like SeafCommitManager or SeafFSManager, it will automatically be created in the main thread.
+
 class SeafObjStoreFactory(object):
     obj_section_map = {
         'blocks': 'block_backend',

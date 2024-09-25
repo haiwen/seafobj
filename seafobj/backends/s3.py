@@ -23,6 +23,7 @@ class SeafS3Client(object):
         self.conf = conf
         self.client = None
         self.bucket = None
+        self.do_connect()
 
     def do_connect(self):
         # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html
@@ -55,9 +56,6 @@ class SeafS3Client(object):
         self.bucket = self.conf.bucket_name
 
     def read_object_content(self, obj_id):
-        if not self.client or not self.bucket:
-            self.do_connect()
-
         obj = self.client.get_object(Bucket=self.bucket, Key=obj_id)
         return obj.get('Body').read()
 
@@ -77,9 +75,6 @@ class SeafObjStoreS3(AbstractObjStore):
         return 'S3 storage backend'
 
     def list_objs(self, repo_id=None):
-        if not self.s3_client.client or not self.s3_client.bucket:
-            self.s3_client.do_connect()
-
         start_after = ''
         while True:
             # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3/client/list_objects_v2.html
@@ -110,9 +105,6 @@ class SeafObjStoreS3(AbstractObjStore):
                 break
 
     def obj_exists(self, repo_id, obj_id):
-        if not self.s3_client.client or not self.s3_client.bucket:
-            self.s3_client.do_connect()
-
         bucket = self.s3_client.bucket
         s3_path = '%s/%s' % (repo_id, obj_id)
         try:
@@ -124,25 +116,16 @@ class SeafObjStoreS3(AbstractObjStore):
         return exists
 
     def write_obj(self, data, repo_id, obj_id):
-        if not self.s3_client.client or not self.s3_client.bucket:
-            self.s3_client.do_connect()
-
         bucket = self.s3_client.bucket
         s3_path = '%s/%s' % (repo_id, obj_id)
         self.s3_client.client.put_object(Bucket=bucket, Key=s3_path, Body=data)
 
     def remove_obj(self, repo_id, obj_id):
-        if not self.s3_client.client or not self.s3_client.bucket:
-            self.s3_client.do_connect()
-
         bucket = self.s3_client.bucket
         s3_path = '%s/%s' % (repo_id, obj_id)
         self.s3_client.client.delete_object(Bucket=bucket, Key=s3_path)
 
     def stat_raw(self, repo_id, obj_id):
-        if not self.s3_client.client or not self.s3_client.bucket:
-            self.s3_client.do_connect()
-
         bucket = self.s3_client.bucket
         s3_path = '%s/%s' % (repo_id, obj_id)
         obj = self.s3_client.client.get_object(Bucket=bucket, Key=s3_path)
