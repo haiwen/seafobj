@@ -1,4 +1,5 @@
 import pylibmc
+from pylibmc import ClientPool
 import re
 
 class McCache(object):
@@ -7,7 +8,8 @@ class McCache(object):
         self.port = 11211
         self.parse_mc_options(mc_options)
         address = f"{self.server}:{self.port}"
-        self.client = pylibmc.Client([address], behaviors={"tcp_nodelay": True})
+        client = pylibmc.Client([address], behaviors={"tcp_nodelay": True})
+        self.pool = ClientPool(client, 20)
 
     def parse_mc_options(self, mc_options):
         match = re.match('--SERVER\\s*=\\s*(\d+\.\d+\.\d+\.\d+):(\d+)', mc_options)
@@ -20,15 +22,18 @@ class McCache(object):
     def set_obj(self, repo_id, obj_id, value):
         try:
             key = '%s-%s' % (repo_id, obj_id)
-            self.client.set(key, value, time=24*3600)
+            with self.pool.reserve() as client:
+                client.set(key, value, time=24*3600)
         except Exception:
             return
 
     def get_obj(self, repo_id, obj_id):
         try:
             key = '%s-%s' % (repo_id, obj_id)
-            data = self.client.get(key)
-            return data
+            with self.pool.reserve() as client:
+                data = client.get(key)
+                return data
+            return None
         except Exception:
             return None
 
