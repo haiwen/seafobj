@@ -4,20 +4,15 @@ import re
 
 class McCache(object):
     def __init__(self, mc_options):
-        self.server = 'localhost'
-        self.port = 11211
+        self.server = 'localhost:11211'
         self.parse_mc_options(mc_options)
-        address = f"{self.server}:{self.port}"
-        client = pylibmc.Client([address], behaviors={"tcp_nodelay": True})
+        client = pylibmc.Client([self.server], behaviors={"tcp_nodelay": True})
         self.pool = ClientPool(client, 20)
 
     def parse_mc_options(self, mc_options):
-        match = re.match('--SERVER\\s*=\\s*(\d+\.\d+\.\d+\.\d+):(\d+)', mc_options)
+        match = re.match('--SERVER\\s*=\\s*(\S+)', mc_options)
         if match:
             self.server = match.group(1)
-            port = match.group(2)
-            if port:
-                self.port = int(port)
 
     def set_obj(self, repo_id, obj_id, value):
         try:
