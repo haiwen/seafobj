@@ -71,8 +71,13 @@ def get_s3_conf(cfg, section):
     if cfg.has_option(section, 'path_style_request'):
         path_style_request = cfg.getboolean(section, 'path_style_request')
 
-    from seafobj.backends.s3 import S3Conf
-    conf = S3Conf(key_id, key, bucket, host, port, use_v4_sig, aws_region, use_https, path_style_request)
+    sse_c_key = None
+    if cfg.has_option(section, 'sse_c_key'):
+        sse_c_key = cfg.get(section, 'sse_c_key')
+
+
+    from seafobj.objwrapper.s3 import S3Conf
+    conf = S3Conf(key_id, key, bucket, host, port, use_v4_sig, aws_region, use_https, path_style_request, sse_c_key)
 
     return conf
 
@@ -113,8 +118,12 @@ def get_s3_conf_from_json(cfg):
     if 'path_style_request' in cfg:
         path_style_request = cfg['path_style_request']
 
-    from seafobj.backends.s3 import S3Conf
-    conf = S3Conf(key_id, key, bucket, host, port, use_v4_sig, aws_region, use_https, path_style_request)
+    sse_c_key = None
+    if 'sse_c_key' in cfg:
+        sse_c_key = cfg['sse_c_key']
+
+    from seafobj.objwrapper.s3 import S3Conf
+    conf = S3Conf(key_id, key, bucket, host, port, use_v4_sig, aws_region, use_https, path_style_request, sse_c_key)
 
     return conf
 
@@ -135,7 +144,7 @@ def get_oss_conf(cfg, section):
     if cfg.has_option(section, 'use_https'):
         use_https = cfg.getboolean(section, 'use_https')
 
-    from seafobj.backends.alioss import OSSConf
+    from seafobj.objwrapper.alioss import OSSConf
     conf = OSSConf(key_id, key, bucket, host, use_https)
 
     return conf
@@ -160,7 +169,7 @@ def get_oss_conf_from_json(cfg):
         if str(cfg['use_https']).lower().strip() == 'true':
             use_https = True
 
-    from seafobj.backends.alioss import OSSConf
+    from seafobj.objwrapper.alioss import OSSConf
     conf = OSSConf(key_id, key, bucket, host, use_https)
 
     return conf
