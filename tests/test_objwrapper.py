@@ -1,14 +1,18 @@
 import pytest
+import uuid
 from tests.utils import get_s3_client, get_oss_client
 
 data1 = 'test file content'
 data2 = "second test file content"
 data3 = "third test file content"
 
+repo_id1 = str(uuid.uuid4())
+repo_id2 = str(uuid.uuid4())
+
 def read_and_write_client(client):
-    key1 = '0e37678b-b0f2-4842-b671-207634c8c0af/249408dcc7aaba6e0948cb2d1950aaf4c86078b0'
-    key2 = '0e37678b-b0f2-4842-b671-207634c8c0af/8228f1d3877efa3395475ccccd065f87d7727e29'
-    key3 = 'b999b39d-2749-44c9-a6b5-982b8bfb7a75/97c5a757b1aa4de4a9d7c07f3d66648e43c562e7'
+    key1 = f'{repo_id1}/249408dcc7aaba6e0948cb2d1950aaf4c86078b0'
+    key2 = f'{repo_id1}/8228f1d3877efa3395475ccccd065f87d7727e29'
+    key3 = f'{repo_id2}/97c5a757b1aa4de4a9d7c07f3d66648e43c562e7'
     client.write_obj(data1, key1)
     client.write_obj(data2, key2)
     client.write_obj(data3, key3)
@@ -19,17 +23,17 @@ def read_and_write_client(client):
     assert client.stat_raw(key2) == len(data2)
     assert client.stat_raw(key3) == len(data3)
 
-    objs = client.list_objs('0e37678b-b0f2-4842-b671-207634c8c0af')
+    objs = client.list_objs(repo_id1)
     num = 0
     for obj in objs:
-        assert obj[0] == '0e37678b-b0f2-4842-b671-207634c8c0af'
+        assert obj[0] == repo_id1
         num += 1
     assert num == 2
 
-    objs = client.list_objs('b999b39d-2749-44c9-a6b5-982b8bfb7a75')
+    objs = client.list_objs(repo_id2)
     num = 0
     for obj in objs:
-        assert obj[0] == 'b999b39d-2749-44c9-a6b5-982b8bfb7a75'
+        assert obj[0] == repo_id2
         num += 1
     assert num == 1
 
