@@ -5,7 +5,7 @@ data1 = 'test file content'
 data2 = "second test file content"
 data3 = "third test file content"
 
-def test_client(client):
+def read_and_write_client(client):
     key1 = '0e37678b-b0f2-4842-b671-207634c8c0af/249408dcc7aaba6e0948cb2d1950aaf4c86078b0'
     key2 = '0e37678b-b0f2-4842-b671-207634c8c0af/8228f1d3877efa3395475ccccd065f87d7727e29'
     key3 = 'b999b39d-2749-44c9-a6b5-982b8bfb7a75/97c5a757b1aa4de4a9d7c07f3d66648e43c562e7'
@@ -61,9 +61,9 @@ def test_client(client):
 def test_obj_wrapper_s3 (sse_c_key):
     client = get_s3_client(sse_c_key)
     assert client.get_name() == "S3 storage backend"
-    test_client(client)
+    read_and_write_client(client)
 def test_obj_wrapper_oss ():
     client = get_oss_client()
     assert client.get_name() == "OSS storage backend"
-    test_client(client)
+    read_and_write_client(client)
 
