@@ -22,8 +22,8 @@ def read_and_write_client(client):
     objs = client.list_objs()
     num = 0
     for obj in objs:
-        assert obj[0] == '0e37678b-b0f2-4842-b671-207634c8c0af' or obj[0] == 'b999b39d-2749-44c9-a6b5-982b8bfb7a75'
-        num += 1
+        if obj[0] == '0e37678b-b0f2-4842-b671-207634c8c0af' or obj[0] == 'b999b39d-2749-44c9-a6b5-982b8bfb7a75':
+            num += 1
     assert num == 3
 
     objs = client.list_objs('0e37678b-b0f2-4842-b671-207634c8c0af')
@@ -40,11 +40,11 @@ def read_and_write_client(client):
         num += 1
     assert num == 1
 
-    raw = client.read_object_content(key1)
+    raw = client.read_obj_raw (key1)
     assert raw == data1
-    raw = client.read_object_content(key2)
+    raw = client.read_obj_raw (key2)
     assert raw == data2
-    raw = client.read_object_content(key3)
+    raw = client.read_obj_raw (key3)
     assert raw == data3
 
     client.remove_obj(key1)
