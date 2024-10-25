@@ -1,6 +1,6 @@
 import boto3
 from botocore.exceptions import ClientError
-from seafobj.objwrapper.s3 import SeafS3Client
+from objwrapper.s3 import SeafS3Client
 
 from .base import AbstractObjStore
 

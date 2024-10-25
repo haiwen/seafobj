@@ -1,7 +1,7 @@
 from .base import AbstractObjStore
 
 from seafobj.exceptions import GetObjectError
-from seafobj.objwrapper.alioss import SeafOSSClient
+from objwrapper.alioss import SeafOSSClient
 
 class SeafObjStoreOSS(AbstractObjStore):
     '''OSS backend for seafile objects'''

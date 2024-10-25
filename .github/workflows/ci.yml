@@ -1,0 +1,33 @@
+name: Seafobj CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+        OSS_ACCESS_KEY: ${{ secrets.OSS_ACCESS_KEY }}
+        OSS_ACCESS_KEY_ID: ${{ secrets.OSS_ACCESS_KEY_ID }}
+        S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
+        S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+        OSS_BLOCKS_BUCKET: ${{ vars.OSS_BLOCKS_BUCKET }}
+        OSS_COMMITS_BUCKET: ${{ vars.OSS_COMMITS_BUCKET }}
+        OSS_FS_BUCKET: ${{ vars.OSS_FS_BUCKET }}
+        OSS_REGION: ${{ vars.OSS_REGION }}
+        S3_BLOCKS_BUCKET: ${{ vars.S3_BLOCKS_BUCKET }}
+        S3_COMMITS_BUCKET: ${{ vars.S3_COMMITS_BUCKET }}
+        S3_FS_BUCKET: ${{ vars.S3_FS_BUCKET }}
+        S3_REGION: ${{ vars.S3_REGION }}
+
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v1
+        with:
+          python-version: "3.8"
+      - name: install dependencies and test
+        run: |
+          cd $GITHUB_WORKSPACE
+          ./ci/install-deps.sh
+          python ./ci/run.py
