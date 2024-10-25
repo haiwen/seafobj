@@ -62,7 +62,7 @@ class SeafS3Client(object):
 
 
     def read_obj_raw(self, real_obj_id):
-        data = self.client.read_object_content(real_obj_id)
+        data = self.read_object_content(real_obj_id)
         return data
 
     def get_name(self):
