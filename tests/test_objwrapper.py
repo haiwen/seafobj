@@ -23,6 +23,13 @@ def read_and_write_client(client):
     assert client.stat_raw(key2) == len(data2)
     assert client.stat_raw(key3) == len(data3)
 
+    objs = client.list_objs()
+    num = 0
+    for obj in objs:
+        if obj[0] == repo_id1 or obj[0] == repo_id2:
+            num += 1
+    assert num == 3
+
     objs = client.list_objs(repo_id1)
     num = 0
     for obj in objs:

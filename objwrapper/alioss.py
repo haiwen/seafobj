@@ -42,29 +42,14 @@ class SeafOSSClient(object):
         return 'OSS storage backend'
 
     def list_objs(self, repo_id=None):
-        object_list = []
-        next_marker = ''
-        while True:
-            if repo_id:
-                Simp_obj_info = self.bucket.list_objects(repo_id, '',next_marker)
-            else:
-                Simp_obj_info = self.bucket.list_objects('', '', next_marker)
-
-            object_list = Simp_obj_info.object_list
-
-            for key in object_list:
-                token = key.key.split('/')
-                if len(token) == 2:
-                    repo_id = token[0]
-                    obj_id = token[1]
-                    size = key.size
-                    obj = [repo_id, obj_id, size]
-                    yield obj
-
-            if Simp_obj_info.is_truncated == False:
-                break
-            else:
-                next_marker = Simp_obj_info.next_marker
+        for key in oss2.ObjectIterator(self.bucket, prefix=repo_id):
+            token = key.key.split('/')
+            if len(token) == 2:
+                repo_id = token[0]
+                obj_id = token[1]
+                size = key.size
+                obj = [repo_id, obj_id, size]
+                yield obj
 
     def obj_exists(self, key):
         return self.bucket.object_exists(key)
