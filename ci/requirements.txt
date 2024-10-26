@@ -1,0 +1,6 @@
+termcolor>=2.3.0
+requests>=2.31.0
+pytest>=7.4.0
+pytest-instafail
+boto3==1.28.12
+oss2==2.18.4
