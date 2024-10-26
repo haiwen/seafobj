@@ -69,19 +69,13 @@ class SeafS3Client(object):
         return 'S3 storage backend'
 
     def list_objs(self, repo_id=None):
-        start_after = ''
-        while True:
-            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3/client/list_objects_v2.html
-            if repo_id:
-                objects = self.client.list_objects_v2(Bucket=self.bucket, StartAfter=start_after,
-                                                                Prefix=repo_id)
-            else:
-                objects = self.client.list_objects_v2(Bucket=self.bucket, StartAfter=start_after)
-
-            if len(objects.get('Contents', [])) == 0:
-                break
-
-            for content in objects.get('Contents', []):
+        paginator = self.client.get_paginator('list_objects_v2')
+        if repo_id:
+            iterator = paginator.paginate(Bucket=self.bucket, Prefix=repo_id)
+        else:
+            iterator = paginator.paginate(Bucket=self.bucket)
+        for page in iterator:
+            for content in page.get('Contents', []):
                 tokens = content.get('Key', '').split('/')
                 if len(tokens) == 2:
                     repo_id = tokens[0]
@@ -89,14 +83,6 @@ class SeafS3Client(object):
                     obj = [repo_id, obj_id, content.get('Size', 0)]
                     yield obj
 
-            # The 'Contents' of response is a list, each element is a dict,
-            # and each dict must contain the 'Key'.
-            # Use the 'Key' of the last dict as the 'StartAfter' parameter of the next list_objects_v2().
-            # If the dict does not contain 'Key', terminate the loop,
-            # otherwise will fall into an infinite loop
-            start_after = objects.get('Contents', [])[-1].get('Key', '')
-            if not objects.get('IsTruncated', False) or not start_after:
-                break
 
     def obj_exists(self, s3_path):
         bucket = self.bucket
