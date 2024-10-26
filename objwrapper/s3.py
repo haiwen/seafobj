@@ -53,66 +53,59 @@ class SeafS3Client(object):
 
         self.bucket = self.conf.bucket_name
 
-    def read_object_content(self, obj_id):
+    def read_obj(self, obj_id):
         if self.conf.sse_c_key:
             obj = self.client.get_object(Bucket=self.bucket, Key=obj_id, SSECustomerKey=self.conf.sse_c_key, SSECustomerAlgorithm='AES256')
         else:
             obj = self.client.get_object(Bucket=self.bucket, Key=obj_id)
         return obj.get('Body').read()
 
-
-    def read_obj_raw(self, real_obj_id):
-        data = self.read_object_content(real_obj_id)
-        return data
-
     def get_name(self):
         return 'S3 storage backend'
 
-    def list_objs(self, repo_id=None):
+    def list_objs(self, prefix=None):
         paginator = self.client.get_paginator('list_objects_v2')
-        if repo_id:
-            iterator = paginator.paginate(Bucket=self.bucket, Prefix=repo_id)
+        if prefix:
+            iterator = paginator.paginate(Bucket=self.bucket, Prefix=prefix)
         else:
             iterator = paginator.paginate(Bucket=self.bucket)
         for page in iterator:
             for content in page.get('Contents', []):
                 tokens = content.get('Key', '').split('/')
                 if len(tokens) == 2:
-                    repo_id = tokens[0]
-                    obj_id = tokens[1]
-                    obj = [repo_id, obj_id, content.get('Size', 0)]
+                    obj = [tokens[0], tokens[1], content.get('Size', 0)]
                     yield obj
 
 
-    def obj_exists(self, s3_path):
+    def obj_exists(self, key):
         bucket = self.bucket
         try:
             if self.conf.sse_c_key:
-                self.client.head_object(Bucket=bucket, Key=s3_path, SSECustomerKey=self.conf.sse_c_key, SSECustomerAlgorithm='AES256')
+                self.client.head_object(Bucket=bucket, Key=key, SSECustomerKey=self.conf.sse_c_key, SSECustomerAlgorithm='AES256')
             else:
-                self.client.head_object(Bucket=bucket, Key=s3_path)
+                self.client.head_object(Bucket=bucket, Key=key)
             exists = True
         except ClientError:
             exists = False
 
         return exists
 
-    def write_obj(self, data, s3_path):
+    def write_obj(self, data, key):
         bucket = self.bucket
         if self.conf.sse_c_key:
-            self.client.put_object(Bucket=bucket, Key=s3_path, Body=data, SSECustomerKey=self.conf.sse_c_key, SSECustomerAlgorithm='AES256')
+            self.client.put_object(Bucket=bucket, Key=key, Body=data, SSECustomerKey=self.conf.sse_c_key, SSECustomerAlgorithm='AES256')
         else:
-            self.client.put_object(Bucket=bucket, Key=s3_path, Body=data)
+            self.client.put_object(Bucket=bucket, Key=key, Body=data)
 
-    def remove_obj(self, s3_path):
+    def remove_obj(self, key):
         bucket = self.bucket
-        self.client.delete_object(Bucket=bucket, Key=s3_path)
+        self.client.delete_object(Bucket=bucket, Key=key)
 
-    def stat_raw(self, s3_path):
+    def stat_obj(self, key):
         bucket = self.bucket
         if self.conf.sse_c_key:
-            obj = self.client.get_object(Bucket=bucket, Key=s3_path, SSECustomerKey=self.conf.sse_c_key, SSECustomerAlgorithm='AES256')
+            obj = self.client.get_object(Bucket=bucket, Key=key, SSECustomerKey=self.conf.sse_c_key, SSECustomerAlgorithm='AES256')
         else:
-            obj = self.client.get_object(Bucket=bucket, Key=s3_path)
+            obj = self.client.get_object(Bucket=bucket, Key=key)
         size = int(obj.get('ContentLength'))
         return size

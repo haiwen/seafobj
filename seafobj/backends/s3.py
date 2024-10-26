@@ -12,7 +12,7 @@ class SeafObjStoreS3(AbstractObjStore):
 
     def read_obj_raw(self, repo_id, version, obj_id):
         real_obj_id = '%s/%s' % (repo_id, obj_id)
-        data = self.s3_client.read_object_content(real_obj_id)
+        data = self.s3_client.read_obj(real_obj_id)
         return data
 
     def get_name(self):
@@ -35,4 +35,4 @@ class SeafObjStoreS3(AbstractObjStore):
 
     def stat_raw(self, repo_id, obj_id):
         s3_path = '%s/%s' % (repo_id, obj_id)
-        return self.s3_client.stat_raw(s3_path)
+        return self.s3_client.stat_obj(s3_path)

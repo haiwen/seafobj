@@ -11,7 +11,7 @@ class SeafObjStoreOSS(AbstractObjStore):
 
     def read_obj_raw(self, repo_id, version, obj_id):
         real_obj_id = '%s/%s' % (repo_id, obj_id)
-        data = self.oss_client.read_object_content(real_obj_id)
+        data = self.oss_client.read_obj(real_obj_id)
         return data
 
     def get_name(self):
@@ -38,4 +38,4 @@ class SeafObjStoreOSS(AbstractObjStore):
     def stat_raw(self, repo_id, obj_id):
         key = '%s/%s' % (repo_id, obj_id)
         
-        return self.oss_client.stat_raw(key)
+        return self.oss_client.stat_obj(key)

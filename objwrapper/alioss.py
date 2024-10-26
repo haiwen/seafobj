@@ -30,25 +30,19 @@ class SeafOSSClient(object):
         self.service = oss2.Service(self.auth, conf.host)
         self.bucket = oss2.Bucket(self.auth, conf.host, conf.bucket_name)
 
-    def read_object_content(self, obj_id):
+    def read_obj(self, obj_id):
         res = self.bucket.get_object(obj_id)
         return res.read()
-
-    def read_obj_raw(self, real_obj_id):
-        data = self.read_object_content(real_obj_id)
-        return data
 
     def get_name(self):
         return 'OSS storage backend'
 
-    def list_objs(self, repo_id=None):
-        for key in oss2.ObjectIterator(self.bucket, prefix=repo_id):
+    def list_objs(self, prefix=None):
+        for key in oss2.ObjectIterator(self.bucket, prefix=prefix):
             token = key.key.split('/')
             if len(token) == 2:
-                repo_id = token[0]
-                obj_id = token[1]
                 size = key.size
-                obj = [repo_id, obj_id, size]
+                obj = [token[0], token[1], size]
                 yield obj
 
     def obj_exists(self, key):
@@ -60,6 +54,6 @@ class SeafOSSClient(object):
     def remove_obj(self, key):
         self.bucket.delete_object(key)
     
-    def stat_raw(self, key):
+    def stat_obj(self, key):
         size = self.bucket.get_object_meta(key).headers['Content-Length']
         return int(size)
