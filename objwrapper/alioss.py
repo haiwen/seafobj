@@ -48,8 +48,11 @@ class SeafOSSClient(object):
     def obj_exists(self, key):
         return self.bucket.object_exists(key)
 
-    def write_obj(self, data, key):
-        self.bucket.put_object(key, data)
+    def write_obj(self, data, key, ctime=-1):
+        headers = None
+        if ctime >= 0:
+            headers = {'x-oss-meta-ctime':str(ctime)}
+        self.bucket.put_object(key, data, headers=headers)
 
     def remove_obj(self, key):
         self.bucket.delete_object(key)
@@ -57,3 +60,11 @@ class SeafOSSClient(object):
     def stat_obj(self, key):
         size = self.bucket.get_object_meta(key).headers['Content-Length']
         return int(size)
+
+    def get_ctime(self, key):
+        headers = self.bucket.head_object(key).headers
+        ctime = headers.get('x-oss-meta-ctime', '')
+        try:
+            return float(ctime)
+        except:
+            return 0

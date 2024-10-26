@@ -22,6 +22,9 @@ def read_and_write_client(client):
     assert client.stat_obj(key1) == len(data1)
     assert client.stat_obj(key2) == len(data2)
     assert client.stat_obj(key3) == len(data3)
+    assert client.get_ctime(key1) == 0
+    assert client.get_ctime(key2) == 0
+    assert client.get_ctime(key3) == 0
 
     objs = client.list_objs()
     num = 0
@@ -52,6 +55,21 @@ def read_and_write_client(client):
     assert raw == data2.encode("utf-8")
     raw = client.read_obj(key3)
     assert raw == data3.encode("utf-8")
+
+    client.remove_obj(key1)
+    assert client.obj_exists(key1) == False
+    client.remove_obj(key2)
+    assert client.obj_exists(key2) == False
+    client.remove_obj(key3)
+    assert client.obj_exists(key3) == False
+
+    ctime = 1729934744
+    client.write_obj(data1, key1, ctime)
+    client.write_obj(data2, key2, ctime)
+    client.write_obj(data3, key3, ctime)
+    assert client.get_ctime(key1) == ctime
+    assert client.get_ctime(key2) == ctime
+    assert client.get_ctime(key3) == ctime
 
     client.remove_obj(key1)
     assert client.obj_exists(key1) == False

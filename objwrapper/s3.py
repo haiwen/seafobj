@@ -90,12 +90,15 @@ class SeafS3Client(object):
 
         return exists
 
-    def write_obj(self, data, key):
+    def write_obj(self, data, key, ctime=-1):
+        metadata = {}
+        if ctime >= 0:
+            metadata = {"Ctime":str(ctime)}
         bucket = self.bucket
         if self.conf.sse_c_key:
-            self.client.put_object(Bucket=bucket, Key=key, Body=data, SSECustomerKey=self.conf.sse_c_key, SSECustomerAlgorithm='AES256')
+            self.client.put_object(Bucket=bucket, Key=key, Body=data, Metadata=metadata, SSECustomerKey=self.conf.sse_c_key, SSECustomerAlgorithm='AES256')
         else:
-            self.client.put_object(Bucket=bucket, Key=key, Body=data)
+            self.client.put_object(Bucket=bucket, Key=key, Body=data, Metadata=metadata)
 
     def remove_obj(self, key):
         bucket = self.bucket
@@ -109,3 +112,16 @@ class SeafS3Client(object):
             obj = self.client.get_object(Bucket=bucket, Key=key)
         size = int(obj.get('ContentLength'))
         return size
+
+    def get_ctime(self, key):
+        bucket = self.bucket
+        if self.conf.sse_c_key:
+            obj = self.client.get_object(Bucket=bucket, Key=key, SSECustomerKey=self.conf.sse_c_key, SSECustomerAlgorithm='AES256')
+        else:
+            obj = self.client.get_object(Bucket=bucket, Key=key)
+        metadata = obj.get('Metadata')
+        ctime = metadata.get('ctime', '')
+        try:
+            return float(ctime)
+        except:
+            return 0
