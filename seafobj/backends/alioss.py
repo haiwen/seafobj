@@ -52,29 +52,12 @@ class SeafObjStoreOSS(AbstractObjStore):
         return 'OSS storage backend'
 
     def list_objs(self, repo_id=None):
-        object_list = []
-        next_marker = ''
-        while True:
-            if repo_id:
-                Simp_obj_info = self.oss_client.bucket.list_objects(repo_id, '',next_marker)
-            else:
-                Simp_obj_info = self.oss_client.bucket.list_objects('', '', next_marker)
-
-            object_list = Simp_obj_info.object_list
-
-            for key in object_list:
-                token = key.key.split('/')
-                if len(token) == 2:
-                    repo_id = token[0]
-                    obj_id = token[1]
-                    size = key.size
-                    obj = [repo_id, obj_id, size]
-                    yield obj
-
-            if Simp_obj_info.is_truncated == False:
-                break
-            else:
-                next_marker = Simp_obj_info.next_marker
+        for key in oss2.ObjectIterator(self.oss_client.bucket, prefix=repo_id):
+            token = key.key.split('/')
+            if len(token) == 2:
+                size = key.size
+                obj = [token[0], token[1], size]
+                yield obj
 
     def obj_exists(self, repo_id, obj_id):
         key = '%s/%s' % (repo_id, obj_id)
@@ -94,4 +77,4 @@ class SeafObjStoreOSS(AbstractObjStore):
     def stat_raw(self, repo_id, obj_id):
         key = '%s/%s' % (repo_id, obj_id)
         
-        return self.oss_client.bucket.get_object_meta(key).headers['Size']
+        return self.oss_client.bucket.get_object_meta(key).headers['Content-Length']

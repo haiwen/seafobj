@@ -5,7 +5,7 @@ from .base import AbstractObjStore
 
 
 class S3Conf(object):
-    def __init__(self, key_id, key, bucket_name, host, port, use_v4_sig, aws_region, use_https, path_style_request):
+    def __init__(self, key_id, key, bucket_name, host, port, use_v4_sig, aws_region, use_https, path_style_request, sse_c_key):
         self.key_id = key_id
         self.key = key
         self.bucket_name = bucket_name
@@ -15,6 +15,7 @@ class S3Conf(object):
         self.aws_region = aws_region
         self.use_https = use_https
         self.path_style_request = path_style_request
+        self.sse_c_key = sse_c_key
 
 
 class SeafS3Client(object):
@@ -56,7 +57,10 @@ class SeafS3Client(object):
         self.bucket = self.conf.bucket_name
 
     def read_object_content(self, obj_id):
-        obj = self.client.get_object(Bucket=self.bucket, Key=obj_id)
+        if self.conf.sse_c_key:
+            obj = self.client.get_object(Bucket=self.bucket, Key=obj_id, SSECustomerKey=self.conf.sse_c_key, SSECustomerAlgorithm='AES256')
+        else:
+            obj = self.client.get_object(Bucket=self.bucket, Key=obj_id)
         return obj.get('Body').read()
 
 
@@ -75,40 +79,26 @@ class SeafObjStoreS3(AbstractObjStore):
         return 'S3 storage backend'
 
     def list_objs(self, repo_id=None):
-        start_after = ''
-        while True:
-            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3/client/list_objects_v2.html
-            if repo_id:
-                objects = self.s3_client.client.list_objects_v2(Bucket=self.s3_client.bucket, StartAfter=start_after,
-                                                                Prefix=repo_id)
-            else:
-                objects = self.s3_client.client.list_objects_v2(Bucket=self.s3_client.bucket, StartAfter=start_after)
-
-            if len(objects.get('Contents', [])) == 0:
-                break
-
-            for content in objects.get('Contents', []):
+        paginator = self.s3_client.client.get_paginator('list_objects_v2')
+        if repo_id:
+            iterator = paginator.paginate(Bucket=self.s3_client.bucket, Prefix=repo_id)
+        else:
+            iterator = paginator.paginate(Bucket=self.s3_client.bucket)
+        for page in iterator:
+            for content in page.get('Contents', []):
                 tokens = content.get('Key', '').split('/')
                 if len(tokens) == 2:
-                    repo_id = tokens[0]
-                    obj_id = tokens[1]
-                    obj = [repo_id, obj_id, content.get('Size', 0)]
+                    obj = [tokens[0], tokens[1], content.get('Size', 0)]
                     yield obj
-
-            # The 'Contents' of response is a list, each element is a dict,
-            # and each dict must contain the 'Key'.
-            # Use the 'Key' of the last dict as the 'StartAfter' parameter of the next list_objects_v2().
-            # If the dict does not contain 'Key', terminate the loop,
-            # otherwise will fall into an infinite loop
-            start_after = objects.get('Contents', [])[-1].get('Key', '')
-            if not objects.get('IsTruncated', False) or not start_after:
-                break
 
     def obj_exists(self, repo_id, obj_id):
         bucket = self.s3_client.bucket
         s3_path = '%s/%s' % (repo_id, obj_id)
         try:
-            self.s3_client.client.head_object(Bucket=bucket, Key=s3_path)
+            if self.s3_client.conf.sse_c_key:
+                self.s3_client.client.head_object(Bucket=bucket, Key=s3_path, SSECustomerKey=self.s3_client.conf.sse_c_key, SSECustomerAlgorithm='AES256')
+            else:
+                self.s3_client.client.head_object(Bucket=bucket, Key=s3_path)
             exists = True
         except ClientError:
             exists = False
@@ -118,7 +108,10 @@ class SeafObjStoreS3(AbstractObjStore):
     def write_obj(self, data, repo_id, obj_id):
         bucket = self.s3_client.bucket
         s3_path = '%s/%s' % (repo_id, obj_id)
-        self.s3_client.client.put_object(Bucket=bucket, Key=s3_path, Body=data)
+        if self.s3_client.conf.sse_c_key:
+            self.s3_client.client.put_object(Bucket=bucket, Key=s3_path, Body=data, SSECustomerKey=self.s3_client.conf.sse_c_key, SSECustomerAlgorithm='AES256')
+        else:
+            self.s3_client.client.put_object(Bucket=bucket, Key=s3_path, Body=data)
 
     def remove_obj(self, repo_id, obj_id):
         bucket = self.s3_client.bucket
@@ -128,6 +121,9 @@ class SeafObjStoreS3(AbstractObjStore):
     def stat_raw(self, repo_id, obj_id):
         bucket = self.s3_client.bucket
         s3_path = '%s/%s' % (repo_id, obj_id)
-        obj = self.s3_client.client.get_object(Bucket=bucket, Key=s3_path)
+        if self.s3_client.conf.sse_c_key:
+            obj = self.s3_client.client.get_object(Bucket=bucket, Key=s3_path, SSECustomerKey=self.s3_client.conf.sse_c_key, SSECustomerAlgorithm='AES256')
+        else:
+            obj = self.s3_client.client.get_object(Bucket=bucket, Key=s3_path)
         size = int(obj.get('ContentLength'))
         return size
