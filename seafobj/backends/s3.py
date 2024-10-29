@@ -19,7 +19,12 @@ class SeafObjStoreS3(AbstractObjStore):
         return 'S3 storage backend'
 
     def list_objs(self, repo_id=None):
-        return self.s3_client.list_objs(repo_id)
+        objs = self.s3_client.list_objs(repo_id)
+        for obj in objs:
+            tokens = obj[0].split('/', 1)
+            if len(tokens) == 2:
+                newobj = [tokens[0], tokens[1], obj[1]]
+                yield newobj
 
     def obj_exists(self, repo_id, obj_id):
         s3_path = '%s/%s' % (repo_id, obj_id)

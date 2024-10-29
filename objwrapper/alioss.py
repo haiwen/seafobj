@@ -39,10 +39,10 @@ class SeafOSSClient(object):
 
     def list_objs(self, prefix=None):
         for key in oss2.ObjectIterator(self.bucket, prefix=prefix):
-            token = key.key.split('/', 1)
-            if len(token) == 2:
+            token = key.key
+            if token:
                 size = key.size
-                obj = [token[0], token[1], size]
+                obj = [token, size]
                 yield obj
 
     def obj_exists(self, key):
