@@ -107,18 +107,18 @@ class SeafS3Client(object):
     def stat_obj(self, key):
         bucket = self.bucket
         if self.conf.sse_c_key:
-            obj = self.client.get_object(Bucket=bucket, Key=key, SSECustomerKey=self.conf.sse_c_key, SSECustomerAlgorithm='AES256')
+            obj = self.client.head_object(Bucket=bucket, Key=key, SSECustomerKey=self.conf.sse_c_key, SSECustomerAlgorithm='AES256')
         else:
-            obj = self.client.get_object(Bucket=bucket, Key=key)
+            obj = self.client.head_object(Bucket=bucket, Key=key)
         size = int(obj.get('ContentLength'))
         return size
 
     def get_ctime(self, key):
         bucket = self.bucket
         if self.conf.sse_c_key:
-            obj = self.client.get_object(Bucket=bucket, Key=key, SSECustomerKey=self.conf.sse_c_key, SSECustomerAlgorithm='AES256')
+            obj = self.client.head_object(Bucket=bucket, Key=key, SSECustomerKey=self.conf.sse_c_key, SSECustomerAlgorithm='AES256')
         else:
-            obj = self.client.get_object(Bucket=bucket, Key=key)
+            obj = self.client.head_object(Bucket=bucket, Key=key)
         metadata = obj.get('Metadata')
         ctime = metadata.get('ctime', '')
         try:
