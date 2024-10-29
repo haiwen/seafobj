@@ -71,7 +71,7 @@ class SeafS3Client(object):
             iterator = paginator.paginate(Bucket=self.bucket)
         for page in iterator:
             for content in page.get('Contents', []):
-                tokens = content.get('Key', '').split('/')
+                tokens = content.get('Key', '').split('/', 1)
                 if len(tokens) == 2:
                     obj = [tokens[0], tokens[1], content.get('Size', 0)]
                     yield obj
