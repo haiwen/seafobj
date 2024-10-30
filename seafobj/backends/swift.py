@@ -291,6 +291,7 @@ class SeafObjStoreSwift(AbstractObjStore):
     def __init__(self, compressed, swift_conf, crypto=None):
         AbstractObjStore.__init__(self, compressed, crypto)
         self.swift_client = SeafSwiftClient(swift_conf)
+        self.container = swift_conf.container
 
     def read_obj_raw(self, repo_id, version, obj_id):
         real_obj_id = '%s/%s' % (repo_id, obj_id)
@@ -322,3 +323,6 @@ class SeafObjStoreSwift(AbstractObjStore):
         key = '%s/%s' % (repo_id, obj_id)
 
         return self.swift_client.stat_obj(key)
+
+    def get_container_name(self):
+        return self.container
