@@ -8,6 +8,7 @@ class SeafObjStoreOSS(AbstractObjStore):
     def __init__(self, compressed, oss_conf, crypto=None, cache=None):
         AbstractObjStore.__init__(self, compressed, crypto, cache)
         self.oss_client = SeafOSSClient(oss_conf)
+        self.bucket_name = oss_conf.bucket_name
 
     def read_obj_raw(self, repo_id, version, obj_id):
         real_obj_id = '%s/%s' % (repo_id, obj_id)
@@ -44,3 +45,6 @@ class SeafObjStoreOSS(AbstractObjStore):
         key = '%s/%s' % (repo_id, obj_id)
         
         return self.oss_client.stat_obj(key)
+
+    def get_container_name(self):
+        return self.bucket_name

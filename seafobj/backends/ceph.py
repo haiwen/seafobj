@@ -72,6 +72,7 @@ class SeafObjStoreCeph(AbstractObjStore):
     def __init__(self, compressed, ceph_conf, crypto=None, cache=None):
         AbstractObjStore.__init__(self, compressed, crypto, cache)
         self.ceph_client = SeafCephClient(ceph_conf)
+        self.pool_name = ceph_conf.pool_name
 
     def read_obj_raw(self, repo_id, version, obj_id):
         data = self.ceph_client.read_object_content(repo_id, obj_id)
@@ -129,3 +130,6 @@ class SeafObjStoreCeph(AbstractObjStore):
             raise
         finally:
             self.ceph_client.ioctx_pool.return_ioctx(ioctx)
+
+    def get_container_name(self):
+        return self.pool_name

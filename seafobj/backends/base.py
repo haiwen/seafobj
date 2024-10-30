@@ -83,3 +83,6 @@ class AbstractObjStore(object):
         
     def stat_raw(self, repo_id, obj_id):
         raise NotImplementedError
+
+    def get_container_name(self):
+        raise NotImplementedError
