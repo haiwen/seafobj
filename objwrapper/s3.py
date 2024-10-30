@@ -1,8 +1,11 @@
 import boto3
 from botocore.exceptions import ClientError
+from objwrapper.exceptions import InvalidConfigError
 
 class S3Conf(object):
     def __init__(self, key_id, key, bucket_name, host, port, use_v4_sig, aws_region, use_https, path_style_request, sse_c_key):
+        if not host and not aws_region:
+            raise InvalidConfigError('aws_region and host are not configured')
         self.key_id = key_id
         self.key = key
         self.bucket_name = bucket_name

@@ -23,6 +23,6 @@ def get_s3_client(sse_c_key):
 
 def get_oss_client():
     host = f'oss-{oss_region}.aliyuncs.com'
-    conf = OSSConf(oss_key_id, oss_key, oss_bucket, host, True)
+    conf = OSSConf(oss_key_id, oss_key, oss_bucket, host, oss_region, True)
     client = SeafOSSClient(conf)
     return client
