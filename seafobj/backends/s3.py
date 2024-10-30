@@ -9,6 +9,7 @@ class SeafObjStoreS3(AbstractObjStore):
     def __init__(self, compressed, s3_conf, crypto=None, cache=None):
         AbstractObjStore.__init__(self, compressed, crypto, cache)
         self.s3_client = SeafS3Client(s3_conf)
+        self.bucket_name = s3_conf.bucket_name
 
     def read_obj_raw(self, repo_id, version, obj_id):
         real_obj_id = '%s/%s' % (repo_id, obj_id)
@@ -41,3 +42,6 @@ class SeafObjStoreS3(AbstractObjStore):
     def stat_raw(self, repo_id, obj_id):
         s3_path = '%s/%s' % (repo_id, obj_id)
         return self.s3_client.stat_obj(s3_path)
+
+    def get_container_name(self):
+        return self.bucket_name
