@@ -98,3 +98,6 @@ class SeafObjStoreFS(AbstractObjStore):
         if not stat_info:
             return -1
         return stat_info.st_size
+
+    def get_container_name(self):
+        return self.obj_dir
