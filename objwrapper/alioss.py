@@ -1,5 +1,6 @@
 import http.client
 import oss2
+from objwrapper.exceptions import InvalidConfigError
 
 # set log level to WARNING
 # the api set_file_logger exists after oss2 2.6.0, which has a lot of 'INFO' log
@@ -10,11 +11,16 @@ except:
     pass
 
 class OSSConf(object):
-    def __init__(self, key_id, key, bucket_name, host, use_https):
+    def __init__(self, key_id, key, bucket_name, host, region, use_https):
+        if not host and not region:
+            raise InvalidConfigError('endpoint and region are not configured')
+        self.host = host
+        if not host:
+            self.host = 'oss-cn-%s-internal.aliyuncs.com' % region
         self.key_id = key_id
         self.key = key
         self.bucket_name = bucket_name
-        self.host = host
+        self.region = region
         self.use_https = use_https
 
 class SeafOSSClient(object):

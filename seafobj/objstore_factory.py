@@ -60,8 +60,6 @@ def get_s3_conf(cfg, section):
     aws_region = None
     if cfg.has_option(section, 'aws_region'):
         aws_region = cfg.get(section, 'aws_region')
-    if not host and not aws_region:
-        raise InvalidConfigError('aws_region and host are not configured')
 
     use_https = False
     if cfg.has_option(section, 'use_https'):
@@ -106,8 +104,6 @@ def get_s3_conf_from_json(cfg):
     aws_region = None
     if 'aws_region' in cfg:
         aws_region = cfg['aws_region']
-    if not host and not aws_region:
-        raise InvalidConfigError('aws_region and host are not configured')
 
     use_https = False
     if 'use_https' in cfg:
@@ -134,18 +130,16 @@ def get_oss_conf(cfg, section):
     endpoint = ''
     if cfg.has_option(section, 'endpoint'):
         endpoint = cfg.get(section, 'endpoint')
-    if not endpoint:
+    region = ''
+    if cfg.has_option(section, 'region'):
         region = cfg.get(section, 'region')
-        endpoint = 'oss-cn-%s-internal.aliyuncs.com' % region
-
-    host = endpoint
 
     use_https = False
     if cfg.has_option(section, 'use_https'):
         use_https = cfg.getboolean(section, 'use_https')
 
     from objwrapper.alioss import OSSConf
-    conf = OSSConf(key_id, key, bucket, host, use_https)
+    conf = OSSConf(key_id, key, bucket, endpoint, region, use_https)
 
     return conf
 
@@ -158,11 +152,9 @@ def get_oss_conf_from_json(cfg):
 
     if 'endpoint' in cfg:
         endpoint = cfg['endpoint']
-    if not endpoint:
+    region = ''
+    if 'region' in cfg:
         region = cfg['region']
-        endpoint = 'oss-cn-%s-internal.aliyuncs.com' % region
-
-    host = endpoint
 
     use_https = False
     if 'use_https' in cfg:
@@ -170,7 +162,7 @@ def get_oss_conf_from_json(cfg):
             use_https = True
 
     from objwrapper.alioss import OSSConf
-    conf = OSSConf(key_id, key, bucket, host, use_https)
+    conf = OSSConf(key_id, key, bucket, endpoint, region, use_https)
 
     return conf
 
