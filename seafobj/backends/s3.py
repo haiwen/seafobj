@@ -17,7 +17,6 @@ class S3Conf(object):
         self.path_style_request = path_style_request
         self.sse_c_key = sse_c_key
 
-
 class SeafS3Client(object):
     """Wraps a s3 connection and a bucket"""
     def __init__(self, conf):
@@ -70,6 +69,10 @@ class SeafObjStoreS3(AbstractObjStore):
         AbstractObjStore.__init__(self, compressed, crypto)
         self.s3_client = SeafS3Client(s3_conf)
         self.bucket_name = s3_conf.bucket_name
+        if s3_conf.host:
+            self.domain = s3_conf.host
+        else:
+            self.domain = "s3." + s3_conf.aws_region + ".amazonaws.com"
 
     def read_obj_raw(self, repo_id, version, obj_id):
         real_obj_id = '%s/%s' % (repo_id, obj_id)
@@ -130,4 +133,4 @@ class SeafObjStoreS3(AbstractObjStore):
         return size
 
     def get_container_name(self):
-        return self.bucket_name
+        return self.domain + "/" + self.bucket_name
