@@ -1,6 +1,6 @@
 import pytest
 import uuid
-from tests.utils import get_s3_client, get_oss_client
+from utils import get_s3_client, get_oss_client
 
 data1 = 'test file content'
 data2 = "second test file content"
