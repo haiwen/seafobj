@@ -11,8 +11,6 @@ TOPDIR = abspath(join(os.getcwd()))
 def main():
     shell("py.test", env=dict(os.environ))
 
-
-
 if __name__ == "__main__":
     setup_logging()
     main()
