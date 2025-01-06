@@ -285,7 +285,7 @@ class SeafileConfig(object):
                 max_connections = self.cfg.get('redis', 'max_connections')
             else:
                 max_connections = 20
-            return get_redis_cache(host, port, expiry, max_connections)
+            return get_redis_cache(host, port, expiry, int(max_connections))
 
         if self.cfg.has_option('memcached', 'memcached_options'):
             mc_options = self.cfg.get('memcached', 'memcached_options')
