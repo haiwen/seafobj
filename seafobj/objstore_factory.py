@@ -271,6 +271,11 @@ class SeafileConfig(object):
         raise RuntimeError('environment SEAFILE_CONF_DIR not set correctly.');
 
     def get_seaf_cache(self):
+        envs = os.environ
+        cache_provider = envs.get("CACHE_PROVIDER")
+        if cache_provider == "redis" or cache_provider == "memcached":
+            return self.load_cache_from_env (envs)
+
         if self.cfg.has_option('redis', 'redis_host'):
             host = self.cfg.get('redis', 'redis_host')
             if self.cfg.has_option('redis', 'redis_port'):
@@ -285,12 +290,57 @@ class SeafileConfig(object):
                 max_connections = self.cfg.get('redis', 'max_connections')
             else:
                 max_connections = 20
-            return get_redis_cache(host, port, expiry, int(max_connections))
+            if self.cfg.has_option('redis', 'redis_password'):
+                passwd = self.cfg.get('redis', 'redis_password')
+            else:
+                passwd = None
+            return get_redis_cache(host, port, expiry, int(max_connections), passwd)
 
         if self.cfg.has_option('memcached', 'memcached_options'):
             mc_options = self.cfg.get('memcached', 'memcached_options')
-            return get_mc_cache(mc_options)
+            if self.cfg.has_option('memcached', 'memcached_expiry'):
+                expiry = self.cfg.get('memcached', 'memcached_expiry')
+            else:
+                expiry = 24 * 3600
+
+            return get_mc_cache(mc_options, int(expiry))
         return None
+
+    def load_cache_from_env(self, envs):
+        cache_provider = envs.get("CACHE_PROVIDER")
+        if cache_provider == "redis":
+            host = envs.get("REDIS_HOST")
+            if not host:
+                return None
+            if envs.get("REDIS_PORT"):
+                port = int(envs.get("REDIS_PORT"))
+            else:
+                port = 6379
+            if envs.get("REDIS_MAX_CONNECTIONS"):
+                max_connections = int(envs.get("REDIS_MAX_CONNECTIONS"))
+            else:
+                max_connections = 100
+            if envs.get("REDIS_EXPIRY"):
+                expiry = int(envs.get("REDIS_EXPIRY"))
+            else:
+                expiry = 24 * 3600
+            passwd = envs.get("REDIS_PASSWORD")
+            return get_redis_cache(host, port, expiry, max_connections, passwd)
+        elif cache_provider == "memcached":
+            host = envs.get("MEMCACHED_HOST")
+            if not host:
+                return None
+            if envs.get("MEMCACHED_PORT"):
+                port = int(envs.get("MEMCACHED_PORT"))
+            else:
+                port = 11211
+            mc_options = f"--SERVER={host}:{port} --POOL-MIN=10 --POOL-MAX=100" 
+            if envs.get("MEMCACHED_EXPIRY"):
+                expiry = int(envs.get("MEMCACHED_EXPIRY"))
+            else:
+                expiry = 24 * 3600
+            return get_mc_cache(mc_options, expiry)
+
 
 # You must ensure that the SeafObjStoreFactory is created in the main thread.
 # If you're using a high-level wrapper like SeafCommitManager or SeafFSManager, it will automatically be created in the main thread.

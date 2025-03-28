@@ -1,9 +1,9 @@
 import redis
 
 class RedisCache(object):
-    def __init__(self, host, port, expiry, max_connections):
+    def __init__(self, host, port, expiry, max_connections, passwd):
         self.expiry = expiry
-        pool = redis.ConnectionPool(host=host, port=port, max_connections=max_connections)
+        pool = redis.ConnectionPool(host=host, port=port, max_connections=max_connections, password=passwd)
         self.client = redis.StrictRedis(connection_pool=pool)
 
     def set_obj(self, repo_id, obj_id, value):
@@ -21,5 +21,5 @@ class RedisCache(object):
         except Exception:
             return None
 
-def get_redis_cache(host, port, expiry, max_connections):
-    return RedisCache(host, port, expiry, max_connections)
+def get_redis_cache(host, port, expiry, max_connections, passwd):
+    return RedisCache(host, port, expiry, max_connections, passwd)
