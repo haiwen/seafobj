@@ -14,6 +14,22 @@ from sqlalchemy.ext.automap import automap_base
 # Automatically generate mapped classes and relationships from a database schema
 Base = automap_base()
 
+def load_db_url_from_env():
+    envs = os.environ
+    host = envs.get("SEAFILE_MYSQL_DB_HOST")
+    username = envs.get("SEAFILE_MYSQL_DB_USER")
+    passwd = envs.get("SEAFILE_MYSQL_DB_PASSWORD")
+    dbname = envs.get("SEAFILE_MYSQL_DB_SEAFILE_DB_NAME")
+
+    if not host or not username or not passwd:
+        return None
+    if not dbname:
+        dbname="seafile_db"
+
+    port = 3306
+    db_url = "mysql+pymysql://%s:%s@%s:%s/%s?charset=utf8" % (username, quote_plus(passwd), host, port, dbname)
+    return db_url
+
 def create_engine_from_conf(config):
     need_connection_pool_fix = True
 
@@ -61,6 +77,9 @@ def create_engine_from_conf(config):
         else:
             raise RuntimeError("Unknown database backend: %s" % backend)
 
+    env_db_url = load_db_url_from_env()
+    if env_db_url:
+        db_url = env_db_url
     # Add pool recycle, or mysql connection will be closed by mysqld if idle
     # for too long.
     kwargs = dict(pool_recycle=300, echo=False, echo_pool=False)
