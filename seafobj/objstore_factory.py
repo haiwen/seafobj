@@ -493,7 +493,8 @@ class SeafObjStoreFactory(object):
         compressed = obj_type == 'fs'
 
         # Get s3 storage backend config from env.
-        if os.environ.get("S3_KEY_ID"):
+        s3_config = os.environ.get("S3_STORAGE_BACKEND_CONFIG")
+        if s3_config == "true":
             from seafobj.backends.s3 import SeafObjStoreS3
             s3_conf = get_s3_conf_from_env(obj_type)
             return SeafObjStoreS3(compressed, s3_conf, crypto, cache)
