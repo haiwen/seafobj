@@ -79,6 +79,57 @@ def get_s3_conf(cfg, section):
 
     return conf
 
+def get_s3_conf_from_env(obj_type):
+    envs = os.environ
+
+    key_id = envs.get("S3_KEY_ID")
+    key = envs.get("S3_SECRET_KEY")
+
+    bucket = None
+    if obj_type == "fs":
+        bucket = envs.get("S3_FS_BUCKET")
+    elif obj_type == "commits":
+        bucket = envs.get("S3_COMMIT_BUCKET")
+    else:
+        bucket = envs.get("S3_BLOCK_BUCKET")
+
+
+    addr = envs.get("S3_HOST")
+    host = None
+    port = None
+    if addr:
+        segs = addr.split(':')
+        host = segs[0]
+
+        try:
+            port = int(segs[1])
+        except IndexError:
+            pass
+
+    use_v4_sig = False
+    if envs.get("S3_USE_V4_SIGNATURE") == "true":
+        use_v4_sig = True
+
+    aws_region = envs.get("S3_AWS_REGION")
+
+    use_https = False
+    if envs.get("S3_USE_HTTPS") == "true":
+        use_https = True
+
+    path_style_request = False
+    if envs.get("S3_PATH_STYLE_REQUEST") == "true":
+        path_style_request = True
+
+    sse_c_key = None
+    if envs.get("S3_SSE_C_KEY"):
+        sse_c_key = envs.get("S3_SSE_C_KEY")
+
+
+    from objwrapper.s3 import S3Conf
+    conf = S3Conf(key_id, key, bucket, host, port, use_v4_sig, aws_region, use_https, path_style_request, sse_c_key)
+
+    return conf
+
 def get_s3_conf_from_json(cfg):
     key_id = cfg['key_id']
     key = cfg['key']
@@ -440,6 +491,14 @@ class SeafObjStoreFactory(object):
             dir_path = cfg.get(section, 'dir')
 
         compressed = obj_type == 'fs'
+
+        # Get s3 storage backend config from env.
+        use_s3 = os.environ.get("USE_S3_STORAGE")
+        if use_s3 == "true":
+            from seafobj.backends.s3 import SeafObjStoreS3
+            s3_conf = get_s3_conf_from_env(obj_type)
+            return SeafObjStoreS3(compressed, s3_conf, crypto, cache)
+
         if backend_name == 'fs':
             if dir_path is None:
                 obj_dir = os.path.join(self.seafile_cfg.get_seafile_storage_dir(), obj_type)
