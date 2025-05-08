@@ -312,6 +312,64 @@ class SeafFSManager(object):
         return self._dir_counter
     def file_read_count(self):
         return self._file_counter
+    
+    def get_file_id_by_path(self, store_id, version, root_id, path):
+        path = self.format_dir_path(path);
+        if path == '/':
+            return None
+
+        slash = path.rfind('/')
+        if slash <= 0:
+            dir = self.load_seafdir(store_id, version, root_id)
+            if not dir:
+                logger.warning('Failed to load root seafdir %s', root_id)
+                return None
+
+        else:
+            parent_dir = path[:slash]
+            dir = self.get_seafdir_by_path(store_id, version, root_id, parent_dir)
+            if not dir:
+                logger.warning('Failed to load seafdir for %s', parent_dir)
+                return None
+
+        base_name = path[slash+1:]
+        for dent in dir.get_files_list():
+            if dent.name == base_name:
+                return dent.id
+
+        return None
+
+    def get_seafdir_by_path(self, store_id, version, root_id, path):
+        dir = fs_mgr.load_seafdir(store_id, version, root_id)
+        if not dir:
+            return None
+        if path.startswith('/'):
+            path = path[1:]
+        parts = path.split('/')
+        while len(parts) != 0:
+            name = parts[0]
+            dir_id = None
+            for dent in dir.dirents.values():
+                if dent.name == name and dent.is_dir():
+                    dir_id = dent.id
+                    break
+            if not dir_id:
+                return None
+
+            dir = fs_mgr.load_seafdir(store_id, version, dir_id)
+            if not dir:
+                return None
+            parts.pop(0)
+
+        return dir
+
+
+    def format_dir_path(self, path):
+        if not path.startswith('/'):
+            path = '/' + path
+        if path != '/' and path.endswith('/'):
+            path = path.rstrip('/')
+        return path
 
 
 fs_mgr = SeafFSManager()
