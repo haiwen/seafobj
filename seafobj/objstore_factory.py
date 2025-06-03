@@ -408,9 +408,12 @@ class SeafObjStoreFactory(object):
         self.enable_storage_classes = False
         self.obj_stores = {'commits': {}, 'fs': {}, 'blocks': {}}
 
+        env_storage_type = os.environ.get("SEAF_SERVER_STORAGE_TYPE")
         cfg = self.seafile_cfg.get_config_parser()
-        if cfg.has_option ('storage', 'enable_storage_classes'):
+        if env_storage_type == 'multiple' or (not env_storage_type and cfg.has_option ('storage', 'enable_storage_classes')):
             enable_storage_classes = cfg.get('storage', 'enable_storage_classes')
+            if env_storage_type == 'multiple':
+                enable_storage_classes = 'true'
             if enable_storage_classes.lower() == 'true':
                 from seafobj.db import init_db_session_class
                 self.enable_storage_classes = True
@@ -493,11 +496,13 @@ class SeafObjStoreFactory(object):
         compressed = obj_type == 'fs'
 
         # Get s3 storage backend config from env.
-        use_s3 = os.environ.get("USE_S3_STORAGE")
-        if use_s3 == "true":
+        env_storage_type = os.environ.get("SEAF_SERVER_STORAGE_TYPE")
+        if env_storage_type == 's3':
             from seafobj.backends.s3 import SeafObjStoreS3
             s3_conf = get_s3_conf_from_env(obj_type)
             return SeafObjStoreS3(compressed, s3_conf, crypto, cache)
+        elif env_storage_type == 'disk':
+            backend_name = 'fs'
 
         if backend_name == 'fs':
             if dir_path is None:
