@@ -9,7 +9,7 @@ import base64
 from lxml import etree
 
 class S3Conf(object):
-    def __init__(self, key_id, key, bucket_name, host, port, use_v4_sig, aws_region, use_https, path_style_request, sse_c_key):
+    def __init__(self, key_id, key, bucket_name, host, port, use_v4_sig, aws_region, use_https, path_style_request, sse_c_key, use_iam_role):
         if not host and not aws_region:
             raise InvalidConfigError('aws_region and host are not configured')
         self.key_id = key_id
@@ -22,6 +22,7 @@ class S3Conf(object):
         self.use_https = use_https
         self.path_style_request = path_style_request
         self.sse_c_key = sse_c_key
+        self.use_iam_role = use_iam_role
 
 
 class SeafS3Client(object):
@@ -48,23 +49,34 @@ class SeafS3Client(object):
                 self.endpoint_url = f'https://s3.{self.conf.aws_region}.amazonaws.com'
             else:
                 self.endpoint_url = f'http://s3.{self.conf.aws_region}.amazonaws.com'
-            self.client = boto3.client('s3',
-                                       region_name=self.conf.aws_region,
-                                       aws_access_key_id=self.conf.key_id,
-                                       aws_secret_access_key=self.conf.key,
-                                       use_ssl=self.conf.use_https,
-                                       config=config)
+            if self.conf.use_iam_role:
+                self.client = boto3.client('s3',
+                                           region_name=self.conf.aws_region,
+                                           aws_access_key_id=self.conf.key_id,
+                                           aws_secret_access_key=self.conf.key,
+                                           use_ssl=self.conf.use_https,
+                                           config=config)
+            else:
+                self.client = boto3.client('s3',
+                                           region_name=self.conf.aws_region,
+                                           use_ssl=self.conf.use_https,
+                                           config=config)
         else:
             # https://github.com/boto/boto3/blob/master/boto3/session.py#L265
             endpoint_url = 'https://%s' % self.conf.host if self.conf.use_https else 'http://%s' % self.conf.host
             if self.conf.port:
                 endpoint_url = '%s:%s' % (endpoint_url, self.conf.port)
             self.endpoint_url = endpoint_url
-            self.client = boto3.client('s3',
-                                       aws_access_key_id=self.conf.key_id,
-                                       aws_secret_access_key=self.conf.key,
-                                       endpoint_url=endpoint_url,
-                                       config=config)
+            if self.conf.use_iam_role:
+                self.client = boto3.client('s3',
+                                           aws_access_key_id=self.conf.key_id,
+                                           aws_secret_access_key=self.conf.key,
+                                           endpoint_url=endpoint_url,
+                                           config=config)
+            else:
+                self.client = boto3.client('s3',
+                                           endpoint_url=endpoint_url,
+                                           config=config)
 
         self.bucket = self.conf.bucket_name
 
