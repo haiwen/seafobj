@@ -17,7 +17,7 @@ s3_bucket = envs.get("S3_BUCKET")
 s3_region = envs.get("S3_REGION")
 
 def get_s3_client(sse_c_key):
-    conf = S3Conf(s3_key_id, s3_key, s3_bucket, None, None, True, s3_region, True, False, sse_c_key)
+    conf = S3Conf(s3_key_id, s3_key, s3_bucket, None, None, True, s3_region, True, False, sse_c_key, False)
     client = SeafS3Client(conf)
     return client
 

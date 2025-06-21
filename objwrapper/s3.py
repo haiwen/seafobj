@@ -44,39 +44,32 @@ class SeafS3Client(object):
         else:
             config = boto3.session.Config(signature_version='s3',s3={'addressing_style':addressing_style})
 
-        if self.conf.host is None:
+        if self.conf.use_iam_role:
+            self.client = boto3.client('s3',
+                                       use_ssl=self.conf.use_https,
+                                       config=config)
+        elif self.conf.host is None:
             if self.conf.use_https:
                 self.endpoint_url = f'https://s3.{self.conf.aws_region}.amazonaws.com'
             else:
                 self.endpoint_url = f'http://s3.{self.conf.aws_region}.amazonaws.com'
-            if self.conf.use_iam_role:
-                self.client = boto3.client('s3',
-                                           region_name=self.conf.aws_region,
-                                           aws_access_key_id=self.conf.key_id,
-                                           aws_secret_access_key=self.conf.key,
-                                           use_ssl=self.conf.use_https,
-                                           config=config)
-            else:
-                self.client = boto3.client('s3',
-                                           region_name=self.conf.aws_region,
-                                           use_ssl=self.conf.use_https,
-                                           config=config)
+            self.client = boto3.client('s3',
+                                       region_name=self.conf.aws_region,
+                                       aws_access_key_id=self.conf.key_id,
+                                       aws_secret_access_key=self.conf.key,
+                                       use_ssl=self.conf.use_https,
+                                       config=config)
         else:
             # https://github.com/boto/boto3/blob/master/boto3/session.py#L265
             endpoint_url = 'https://%s' % self.conf.host if self.conf.use_https else 'http://%s' % self.conf.host
             if self.conf.port:
                 endpoint_url = '%s:%s' % (endpoint_url, self.conf.port)
             self.endpoint_url = endpoint_url
-            if self.conf.use_iam_role:
-                self.client = boto3.client('s3',
-                                           aws_access_key_id=self.conf.key_id,
-                                           aws_secret_access_key=self.conf.key,
-                                           endpoint_url=endpoint_url,
-                                           config=config)
-            else:
-                self.client = boto3.client('s3',
-                                           endpoint_url=endpoint_url,
-                                           config=config)
+            self.client = boto3.client('s3',
+                                       aws_access_key_id=self.conf.key_id,
+                                       aws_secret_access_key=self.conf.key,
+                                       endpoint_url=endpoint_url,
+                                       config=config)
 
         self.bucket = self.conf.bucket_name
 
