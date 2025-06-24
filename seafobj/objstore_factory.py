@@ -73,9 +73,13 @@ def get_s3_conf(cfg, section):
     if cfg.has_option(section, 'sse_c_key'):
         sse_c_key = cfg.get(section, 'sse_c_key')
 
+    envs = os.environ
+    use_iam_role = False
+    if envs.get("S3_USE_IAM_ROLE") == "true":
+        use_iam_role = True
 
     from objwrapper.s3 import S3Conf
-    conf = S3Conf(key_id, key, bucket, host, port, use_v4_sig, aws_region, use_https, path_style_request, sse_c_key)
+    conf = S3Conf(key_id, key, bucket, host, port, use_v4_sig, aws_region, use_https, path_style_request, sse_c_key, use_iam_role)
 
     return conf
 
@@ -124,9 +128,13 @@ def get_s3_conf_from_env(obj_type):
     if envs.get("S3_SSE_C_KEY"):
         sse_c_key = envs.get("S3_SSE_C_KEY")
 
+    use_iam_role = False
+    if envs.get("S3_USE_IAM_ROLE") == "true":
+        use_iam_role = True
+
 
     from objwrapper.s3 import S3Conf
-    conf = S3Conf(key_id, key, bucket, host, port, use_v4_sig, aws_region, use_https, path_style_request, sse_c_key)
+    conf = S3Conf(key_id, key, bucket, host, port, use_v4_sig, aws_region, use_https, path_style_request, sse_c_key, use_iam_role)
 
     return conf
 
@@ -170,7 +178,7 @@ def get_s3_conf_from_json(cfg):
         sse_c_key = cfg['sse_c_key']
 
     from objwrapper.s3 import S3Conf
-    conf = S3Conf(key_id, key, bucket, host, port, use_v4_sig, aws_region, use_https, path_style_request, sse_c_key)
+    conf = S3Conf(key_id, key, bucket, host, port, use_v4_sig, aws_region, use_https, path_style_request, sse_c_key, False)
 
     return conf
 
