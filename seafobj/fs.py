@@ -343,6 +343,8 @@ class SeafFSManager(object):
         dir = fs_mgr.load_seafdir(store_id, version, root_id)
         if not dir:
             return None
+        if path == '/':
+            return dir 
         if path.startswith('/'):
             path = path[1:]
         parts = path.split('/')
