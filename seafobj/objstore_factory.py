@@ -549,19 +549,14 @@ class SeafObjStoreFactory(object):
             raise InvalidConfigError('unknown %s backend "%s"' % (obj_type, backend_name))
 
 objstore_factory = SeafObjStoreFactory()
-repo_storage_id = {}
 
 def get_repo_storage_id(repo_id):
-    if repo_id in repo_storage_id:
-        return repo_storage_id[repo_id]
-    else:
-        from .db import Base
-        from sqlalchemy.orm.scoping import scoped_session
-        RepoStorageId = Base.classes.RepoStorageId
-        storage_id = None
-        session = scoped_session(objstore_factory.session)
-        r = session.scalars(select(RepoStorageId).where(RepoStorageId.repo_id == repo_id).limit(1)).first()
-        storage_id = r.storage_id if r else None
-        repo_storage_id[repo_id] = storage_id
-        session.remove()
-        return storage_id
+    from .db import Base
+    from sqlalchemy.orm.scoping import scoped_session
+    RepoStorageId = Base.classes.RepoStorageId
+    storage_id = None
+    session = scoped_session(objstore_factory.session)
+    r = session.scalars(select(RepoStorageId).where(RepoStorageId.repo_id == repo_id).limit(1)).first()
+    storage_id = r.storage_id if r else None
+    session.remove()
+    return storage_id
