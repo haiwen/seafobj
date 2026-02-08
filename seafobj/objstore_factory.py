@@ -550,8 +550,8 @@ class SeafObjStoreFactory(object):
 
 objstore_factory = SeafObjStoreFactory()
 repo_storage_id = {}
-
 def get_repo_storage_id(repo_id):
+    
     if repo_id in repo_storage_id:
         return repo_storage_id[repo_id]
     else:
@@ -565,3 +565,6 @@ def get_repo_storage_id(repo_id):
         repo_storage_id[repo_id] = storage_id
         session.remove()
         return storage_id
+    
+def storage_cache_clear(repo_id):
+    repo_storage_id.pop(repo_id, None)
