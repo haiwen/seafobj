@@ -20,13 +20,13 @@ def load_db_url_from_env():
     username = envs.get("SEAFILE_MYSQL_DB_USER")
     passwd = envs.get("SEAFILE_MYSQL_DB_PASSWORD")
     dbname = envs.get("SEAFILE_MYSQL_DB_SEAFILE_DB_NAME")
+    port = int(envs.get("SEAFILE_MYSQL_DB_PORT", 3306))
 
     if not host or not username or not passwd:
         return None
     if not dbname:
         dbname="seafile_db"
 
-    port = 3306
     db_url = "mysql+pymysql://%s:%s@%s:%s/%s?charset=utf8" % (username, quote_plus(passwd), host, port, dbname)
     return db_url
 
