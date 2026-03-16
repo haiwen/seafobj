@@ -11,6 +11,8 @@ from seafobj.backends.filesystem import SeafObjStoreFS
 from seafobj.mc import get_mc_cache
 from seafobj.redis_cache import get_redis_cache
 
+logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
+
 def get_ceph_conf(cfg, section):
     config_file = cfg.get(section, 'ceph_config')
     pool_name = cfg.get(section, 'pool')
@@ -19,6 +21,13 @@ def get_ceph_conf(cfg, section):
         ceph_client_id = cfg.get(section, 'ceph_client_id')
 
     from seafobj.backends.ceph import CephConf
+
+    logging.info(
+        "Load ceph config: ceph_config=%s pool=%s ceph_clinet_id=%s",
+        config_file,
+        pool_name,
+        ceph_client_id,
+    )
 
     return CephConf(config_file, pool_name, ceph_client_id)
 
@@ -78,6 +87,19 @@ def get_s3_conf(cfg, section):
     if envs.get("S3_USE_IAM_ROLE") == "true":
         use_iam_role = True
 
+    logging.info(
+        "Load s3 config: bucket=%s host=%s port=%s region=%s "
+        "use_https=%s use_v4_sig=%s path_style_request=%s use_iam_role=%s",
+        bucket,
+        host,
+        port,
+        aws_region,
+        use_https,
+        use_v4_sig,
+        path_style_request,
+        use_iam_role,
+    )
+
     from objwrapper.s3 import S3Conf
     conf = S3Conf(key_id, key, bucket, host, port, use_v4_sig, aws_region, use_https, path_style_request, sse_c_key, use_iam_role)
 
@@ -132,6 +154,18 @@ def get_s3_conf_from_env(obj_type):
     if envs.get("S3_USE_IAM_ROLE") == "true":
         use_iam_role = True
 
+    logging.info(
+        "Load s3 config: bucket=%s host=%s port=%s region=%s "
+        "use_https=%s use_v4_sig=%s path_style_request=%s use_iam_role=%s",
+        bucket,
+        host,
+        port,
+        aws_region,
+        use_https,
+        use_v4_sig,
+        path_style_request,
+        use_iam_role,
+    )
 
     from objwrapper.s3 import S3Conf
     conf = S3Conf(key_id, key, bucket, host, port, use_v4_sig, aws_region, use_https, path_style_request, sse_c_key, use_iam_role)
@@ -197,6 +231,14 @@ def get_oss_conf(cfg, section):
     if cfg.has_option(section, 'use_https'):
         use_https = cfg.getboolean(section, 'use_https')
 
+    logging.info(
+        "Load oss config: bucket=%s endpoint=%s region=%s use_https=%s",
+        bucket,
+        endpoint,
+        region,
+        use_https,
+    )
+
     from objwrapper.alioss import OSSConf
     conf = OSSConf(key_id, key, bucket, endpoint, region, use_https)
 
@@ -251,6 +293,19 @@ def get_swift_conf(cfg, section):
     else:
         domain = 'default'
 
+    logging.info(
+        "Load swift config: user_name=%s container=%s auth_host=%s auth_ver=%s "
+        "tenant=%s use_https=%s region=%s domain=%s",
+        user_name,
+        container,
+        auth_host,
+        auth_ver,
+        tenant,
+        use_https,
+        region,
+        domain
+    )
+
     from seafobj.backends.swift import SwiftConf
     conf = SwiftConf(user_name, password, container, auth_host, auth_ver, tenant, use_https, region, domain)
     return conf
@@ -286,20 +341,121 @@ def get_swift_conf_from_json (cfg):
     return conf
 
 class SeafileConfig(object):
+    obj_section_map = {
+        'blocks': 'block_backend',
+        'fs': 'fs_object_backend',
+        'commits': 'commit_object_backend',
+    }
     def __init__(self):
         self.cfg = None
-        self.env_storage_type = os.environ.get('SEAF_SERVER_STORAGE_TYPE', None)
-        self.seafile_conf_dir = os.environ.get('SEAFILE_CONF_DIR', None)
+        self.disk_confs = {'commits': None, 'fs': None, 'blocks': None}
+        self.swift_confs = {'commits': None, 'fs': None, 'blocks': None}
+        self.s3_confs = {'commits': None, 'fs': None, 'blocks': None}
+        self.ceph_confs = {'commits': None, 'fs': None, 'blocks': None}
+        self.oss_confs = {'commits': None, 'fs': None, 'blocks': None}
+        self.json_cfg = None
+        self.cache = None
+        self.crypto = None
+        self.storage_type = os.environ.get('SEAF_SERVER_STORAGE_TYPE', None)
+        self.seafile_data_dir = os.environ.get('SEAFILE_DATA_DIR','')
         self.central_config_dir = os.environ.get('SEAFILE_CENTRAL_CONF_DIR',
                                                  None)
+        # If SEAFILE_DATA_DIR is not set, try to get the SEAFILE_CONF_DIR.
+        if self.seafile_data_dir == '':
+            self.seafile_data_dir = os.environ.get('SEAFILE_CONF_DIR', '')
         self.has_cfg = False
-        confdir = self.central_config_dir or self.seafile_conf_dir
+        confdir = self.central_config_dir
         if confdir:
             self.seafile_conf = os.path.join(confdir, 'seafile.conf')
             self.has_cfg = os.path.exists(self.seafile_conf)
-        # If the seafile.conf is not found and the storage type is neither 's3' nor 'disk', raise an exception.
-        if not self.has_cfg and self.env_storage_type != 's3' and self.env_storage_type != 'disk':
-            raise InvalidConfigError("seafile.conf does not exist or SEAFILE_CONF_DIR and SEAFILE_CENTRAL_CONF_DIR are not set in the environment variables.")
+
+        if self.has_cfg:
+            self.get_config_parser()
+        self.cache = self.get_seaf_cache()
+
+        if self.storage_type == 's3':
+            for obj_type in self.s3_confs:
+                self.s3_confs[obj_type] = get_s3_conf_from_env(obj_type)
+        elif self.storage_type == 'disk':
+            for obj_type in self.disk_confs:
+                obj_dir = os.path.join(self.get_seafile_storage_dir(), obj_type)
+                if not os.path.exists(obj_dir):
+                    os.makedirs(obj_dir)
+                self.disk_confs[obj_type] = obj_dir
+                logging.info(
+                    "Load disk config: storage_dir=%s",
+                    obj_dir,
+                )
+        else:
+            # If the seafile.conf is not found and the storage type is neither 's3' nor 'disk', raise an exception.
+            if not self.has_cfg:
+                raise InvalidConfigError("seafile.conf does not exist or SEAFILE_CENTRAL_CONF_DIR are not set in the environment variables.")
+            self.crypto = self.get_seaf_crypto()
+            self.init_backend_conf()
+
+    def init_backend_conf(self):
+        # Get storage backend from seafile.conf
+        cfg = self.cfg
+
+        # Load multiple storage backend configurations from the seafile.conf.
+        if self.storage_type == 'multiple' or cfg.has_option ('storage', 'enable_storage_classes'):
+            enable_storage_classes = cfg.get('storage', 'enable_storage_classes')
+            if self.storage_type == 'multiple':
+                enable_storage_classes = 'true'
+            if enable_storage_classes.lower() == 'true':
+                self.storage_type = 'multiple'
+                try:
+                    json_file = cfg.get('storage', 'storage_classes_file')
+                    f = open(json_file)
+                    self.json_cfg = json.load(f)
+                    logging.info(
+                        "Load multiple backend config: storage_classes_file=%s",
+                        json_file,
+                    )
+                except Exception:
+                    logging.warning('Failed to load json file')
+                    raise
+                return
+
+        for obj_type in self.obj_section_map:
+            section = self.obj_section_map[obj_type]
+
+            backend_name = ''
+            dir_path = None
+            if cfg.has_option(section, 'name'):
+                backend_name = cfg.get(section, 'name')
+            else:
+                backend_name = 'fs'
+            if cfg.has_option(section, 'dir'):
+                dir_path = cfg.get(section, 'dir')
+
+            if backend_name == 'fs':
+                self.storage_type = 'disk'
+                if dir_path is None:
+                    obj_dir = os.path.join(self.get_seafile_storage_dir(), obj_type)
+                else:
+                    obj_dir = os.path.join(dir_path, 'storage', obj_type)
+                if not os.path.exists(obj_dir):
+                    os.makedirs(obj_dir)
+                self.disk_confs[obj_type] = obj_dir
+                logging.info(
+                    "Load disk config: storage_dir=%s",
+                    obj_dir,
+                )
+            elif backend_name == 's3':
+                self.storage_type = 's3'
+                self.s3_confs[obj_type] = get_s3_conf(cfg, section)
+            elif backend_name == 'ceph':
+                self.storage_type = 'ceph'
+                self.ceph_confs[obj_type] = get_ceph_conf(cfg, section)
+            elif backend_name == 'oss':
+                self.storage_type = 'oss'
+                self.oss_confs[obj_type] = get_oss_conf(cfg, section)
+            elif backend_name == 'swift':
+                self.storage_type = 'swift'
+                self.swift_confs[obj_type] = get_swift_conf(cfg, section)
+            else:
+                raise InvalidConfigError('unknown %s backend "%s"' % (obj_type, backend_name))
 
     def get_config_parser(self):
         if self.cfg is None:
@@ -332,9 +488,9 @@ class SeafileConfig(object):
         return SeafCrypto(raw_key, raw_iv)
 
     def get_seafile_storage_dir(self):
-        if self.seafile_conf_dir and os.path.exists(self.seafile_conf_dir):
-            return os.path.join(self.seafile_conf_dir, 'storage')
-        raise RuntimeError('environment SEAFILE_CONF_DIR not set correctly.');
+        if self.seafile_data_dir != '' and os.path.exists(self.seafile_data_dir):
+            return os.path.join(self.seafile_data_dir, 'storage')
+        raise RuntimeError('environment SEAFILE_DATA_DIR not set correctly.');
 
     def get_seaf_cache(self):
         envs = os.environ
@@ -420,28 +576,13 @@ class SeafObjStoreFactory(object):
     }
     def __init__(self, cfg=None):
         self.seafile_cfg = cfg or SeafileConfig()
-        self.json_cfg = None
         self.enable_storage_classes = False
         self.obj_stores = {'commits': {}, 'fs': {}, 'blocks': {}}
 
-        env_storage_type = self.seafile_cfg.env_storage_type
-        if env_storage_type != 's3' and env_storage_type != 'disk':
-            cfg = self.seafile_cfg.get_config_parser()
-            if env_storage_type == 'multiple' or (not env_storage_type and cfg.has_option ('storage', 'enable_storage_classes')):
-                enable_storage_classes = cfg.get('storage', 'enable_storage_classes')
-                if env_storage_type == 'multiple':
-                    enable_storage_classes = 'true'
-                if enable_storage_classes.lower() == 'true':
-                    from seafobj.db import init_db_session_class
-                    self.enable_storage_classes = True
-                    self.session = init_db_session_class(cfg)
-                    try:
-                        json_file = cfg.get('storage', 'storage_classes_file')
-                        f = open(json_file)
-                        self.json_cfg = json.load(f)
-                    except Exception:
-                        logging.warning('Failed to load json file')
-                        raise
+        if self.seafile_cfg.storage_type == 'multiple':
+            from seafobj.db import init_db_session_class
+            self.enable_storage_classes = True
+            self.session = init_db_session_class(self.seafile_cfg.cfg)
 
     def get_obj_stores(self, obj_type):
         try:
@@ -450,14 +591,14 @@ class SeafObjStoreFactory(object):
         except KeyError:
             raise RuntimeError('unknown obj_type ' + obj_type)
 
-        for bend in self.json_cfg:
+        for bend in self.seafile_cfg.json_cfg:
             storage_id = bend['storage_id']
 
-            crypto = self.seafile_cfg.get_seaf_crypto()
+            crypto = self.seafile_cfg.crypto
             compressed = obj_type == 'fs'
             cache = None
             if obj_type != 'blocks':
-                cache = self.seafile_cfg.get_seaf_cache()
+                cache = self.seafile_cfg.cache
 
             if bend[obj_type]['backend'] == 'fs':
                 obj_dir = os.path.join(bend[obj_type]['dir'], 'storage', obj_type)
@@ -490,74 +631,30 @@ class SeafObjStoreFactory(object):
 
     def get_obj_store(self, obj_type):
         '''Return an implementation of SeafileObjStore'''
+        cfg = self.seafile_cfg
         compressed = obj_type == 'fs'
         cache = None
         if obj_type != 'blocks':
-            cache = self.seafile_cfg.get_seaf_cache()
-        # Get s3 storage backend config from env.
-        env_storage_type = self.seafile_cfg.env_storage_type
-        if env_storage_type == 's3':
+            cache = cfg.cache
+        crypto = cfg.crypto
+
+        storage_type = cfg.storage_type
+        if storage_type == 'disk':
+            return SeafObjStoreFS(compressed, cfg.disk_confs[obj_type], crypto)
+        elif storage_type == 's3':
             from seafobj.backends.s3 import SeafObjStoreS3
-            s3_conf = get_s3_conf_from_env(obj_type)
-            return SeafObjStoreS3(compressed, s3_conf, None, cache)
-        elif env_storage_type == 'disk':
-            obj_dir = os.path.join(self.seafile_cfg.get_seafile_storage_dir(), obj_type)
-            if not os.path.exists(obj_dir):
-                os.makedirs(obj_dir)
-            return SeafObjStoreFS(compressed, obj_dir, None)
-
-        # Get storage backend from seafile.conf
-        cfg = self.seafile_cfg.get_config_parser()
-        try:
-            section = self.obj_section_map[obj_type]
-        except KeyError:
-            raise RuntimeError('unknown obj_type ' + obj_type)
-
-        crypto = self.seafile_cfg.get_seaf_crypto()
-        dir_path = None
-        backend_name = ''
-        if cfg.has_option(section, 'name'):
-            backend_name = cfg.get(section, 'name')
-        else:
-            backend_name = 'fs'
-        if cfg.has_option(section, 'dir'):
-            dir_path = cfg.get(section, 'dir')
-
-        if backend_name == 'fs':
-            if dir_path is None:
-                obj_dir = os.path.join(self.seafile_cfg.get_seafile_storage_dir(), obj_type)
-            else:
-                obj_dir = os.path.join(dir_path, 'storage', obj_type)
-            if not os.path.exists(obj_dir):
-                os.makedirs(obj_dir)
-            return SeafObjStoreFS(compressed, obj_dir, crypto)
-
-        elif backend_name == 's3':
-            # We import s3 backend here to avoid dependency on boto3 for users
-            # not using s3
-            from seafobj.backends.s3 import SeafObjStoreS3
-            s3_conf = get_s3_conf(cfg, section)
-            return SeafObjStoreS3(compressed, s3_conf, crypto, cache)
-
-        elif backend_name == 'ceph':
-            # We import ceph backend here to avoid depenedency on rados for
-            # users not using rados
+            return SeafObjStoreS3(compressed, cfg.s3_confs[obj_type], crypto, cache)
+        elif storage_type == 'ceph':
             from seafobj.backends.ceph import SeafObjStoreCeph
-            ceph_conf = get_ceph_conf(cfg, section)
-            return SeafObjStoreCeph(compressed, ceph_conf, crypto, cache)
-
-        elif backend_name == 'oss':
+            return SeafObjStoreCeph(compressed, cfg.ceph_confs[obj_type], crypto, cache)
+        elif storage_type == 'oss':
             from seafobj.backends.alioss import SeafObjStoreOSS
-            oss_conf = get_oss_conf(cfg, section)
-            return SeafObjStoreOSS(compressed, oss_conf, crypto, cache)
-
-        elif backend_name == 'swift':
+            return SeafObjStoreOSS(compressed, cfg.oss_confs[obj_type], crypto, cache)
+        elif storage_type == 'swift':
             from seafobj.backends.swift import SeafObjStoreSwift
-            swift_conf = get_swift_conf(cfg, section)
-            return SeafObjStoreSwift(compressed, swift_conf, crypto, cache)
-
+            return SeafObjStoreSwift(compressed, cfg.swift_confs[obj_type], crypto, cache)
         else:
-            raise InvalidConfigError('unknown %s backend "%s"' % (obj_type, backend_name))
+            raise InvalidConfigError('unknown %s backend "%s"' % (obj_type, storage_type))
 
 objstore_factory = SeafObjStoreFactory()
 repo_storage_id = {}
