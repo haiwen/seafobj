@@ -388,32 +388,34 @@ class SeafileConfig(object):
         'commits': 'commit_object_backend',
     }
     def __init__(self):
-        self.cfg = None
+        self.cfg_file_parser = None
         self.disk_confs = {'commits': None, 'fs': None, 'blocks': None}
         self.swift_confs = {'commits': None, 'fs': None, 'blocks': None}
         self.s3_confs = {'commits': None, 'fs': None, 'blocks': None}
         self.ceph_confs = {'commits': None, 'fs': None, 'blocks': None}
         self.oss_confs = {'commits': None, 'fs': None, 'blocks': None}
-        self.json_cfg = None
+        self.multi_backend_cfg = None
+
         self.cache = None
         self.crypto = None
+
         self.storage_type = os.environ.get('SEAF_SERVER_STORAGE_TYPE', None)
         self.seafile_data_dir = os.environ.get('SEAFILE_DATA_DIR','')
-        self.central_config_dir = os.environ.get('SEAFILE_CENTRAL_CONF_DIR',
-                                                 None)
+        self.central_config_dir = os.environ.get('SEAFILE_CENTRAL_CONF_DIR', None)
         # If SEAFILE_DATA_DIR is not set, try to get the SEAFILE_CONF_DIR.
         if self.seafile_data_dir == '':
             self.seafile_data_dir = os.environ.get('SEAFILE_CONF_DIR', '')
-        self.has_cfg = False
+
+        self.has_cfg_file = False
         confdir = self.central_config_dir
         if confdir:
             self.seafile_conf = os.path.join(confdir, 'seafile.conf')
-            self.has_cfg = os.path.exists(self.seafile_conf)
+            self.has_cfg_file = os.path.exists(self.seafile_conf)
 
-        if self.has_cfg:
+        if self.has_cfg_file:
             self.get_config_parser()
         self.cache = self.get_seaf_cache()
-
+        # If the SEAF_SERVER_STORAGE_TYPE environment variable is configured, the configuration will be loaded from the environment variables.
         if self.storage_type == 's3':
             for obj_type in self.s3_confs:
                 self.s3_confs[obj_type] = get_s3_conf_from_env(obj_type)
@@ -429,49 +431,40 @@ class SeafileConfig(object):
                 )
         else:
             # If the seafile.conf is not found and the storage type is neither 's3' nor 'disk', raise an exception.
-            if not self.has_cfg:
+            if not self.has_cfg_file:
                 raise InvalidConfigError("seafile.conf does not exist or SEAFILE_CENTRAL_CONF_DIR are not set in the environment variables.")
             self.crypto = self.get_seaf_crypto()
             self.init_backend_conf()
 
     def init_backend_conf(self):
         # Get storage backend from seafile.conf
-        cfg = self.cfg
+        cfg_file_parser = self.cfg_file_parser
 
-        # Load multiple storage backend configurations from the seafile.conf.
-        if self.storage_type == 'multiple' or cfg.has_option ('storage', 'enable_storage_classes'):
-            enable_storage_classes = cfg.get('storage', 'enable_storage_classes')
-            if self.storage_type == 'multiple':
-                enable_storage_classes = 'true'
-            if enable_storage_classes.lower() == 'true':
-                self.storage_type = 'multiple'
-                try:
-                    json_file = cfg.get('storage', 'storage_classes_file')
-                    f = open(json_file)
-                    self.json_cfg = json.load(f)
-                    logging.info(
-                        "Load multiple backend config: storage_classes_file=%s",
-                        json_file,
-                    )
-                except Exception:
-                    logging.warning('Failed to load json file')
-                    raise
-                return
+        enable_storage_classes = False
+        if self.storage_type == 'multiple':
+            enable_storage_classes = True
+        elif cfg_file_parser.has_option('storage', 'enable_storage_classes'):
+            enable_storage_classes = cfg_file_parser.get('storage', 'enable_storage_classes').lower() == 'true'
+
+        if enable_storage_classes:
+            self.storage_type = 'multiple'
+            self.load_multiple_backend_conf()
+            return
 
         for obj_type in self.obj_section_map:
             section = self.obj_section_map[obj_type]
 
             backend_name = ''
-            dir_path = None
-            if cfg.has_option(section, 'name'):
-                backend_name = cfg.get(section, 'name')
+            if cfg_file_parser.has_option(section, 'name'):
+                backend_name = cfg_file_parser.get(section, 'name')
             else:
                 backend_name = 'fs'
-            if cfg.has_option(section, 'dir'):
-                dir_path = cfg.get(section, 'dir')
 
             if backend_name == 'fs':
                 self.storage_type = 'disk'
+                dir_path = None
+                if cfg_file_parser.has_option(section, 'dir'):
+                    dir_path = cfg_file_parser.get(section, 'dir')
                 if dir_path is None:
                     obj_dir = os.path.join(self.get_seafile_storage_dir(), obj_type)
                 else:
@@ -485,32 +478,45 @@ class SeafileConfig(object):
                 )
             elif backend_name == 's3':
                 self.storage_type = 's3'
-                self.s3_confs[obj_type] = get_s3_conf(cfg, section)
+                self.s3_confs[obj_type] = get_s3_conf(cfg_file_parser, section)
             elif backend_name == 'ceph':
                 self.storage_type = 'ceph'
-                self.ceph_confs[obj_type] = get_ceph_conf(cfg, section)
+                self.ceph_confs[obj_type] = get_ceph_conf(cfg_file_parser, section)
             elif backend_name == 'oss':
                 self.storage_type = 'oss'
-                self.oss_confs[obj_type] = get_oss_conf(cfg, section)
+                self.oss_confs[obj_type] = get_oss_conf(cfg_file_parser, section)
             elif backend_name == 'swift':
                 self.storage_type = 'swift'
-                self.swift_confs[obj_type] = get_swift_conf(cfg, section)
+                self.swift_confs[obj_type] = get_swift_conf(cfg_file_parser, section)
             else:
                 raise InvalidConfigError('unknown %s backend "%s"' % (obj_type, backend_name))
 
+    def load_multiple_backend_conf(self):
+        cfg_file_parser = self.cfg_file_parser
+        try:
+            json_file = cfg_file_parser.get('storage', 'storage_classes_file')
+            f = open(json_file)
+            self.multi_backend_cfg = json.load(f)
+            logging.info(
+                "Load multiple backend config: storage_classes_file=%s",
+                json_file,
+            )
+        except Exception:
+            logging.warning('Failed to load json file')
+            raise
+
     def get_config_parser(self):
-        if self.cfg is None:
-            self.cfg = configparser.ConfigParser()
+        if self.cfg_file_parser is None:
+            self.cfg_file_parser = configparser.ConfigParser()
             try:
-                self.cfg.read(self.seafile_conf)
+                self.cfg_file_parser.read(self.seafile_conf)
             except Exception as e:
                 raise InvalidConfigError(str(e))
-        return self.cfg
 
     def get_seaf_crypto(self):
-        if not self.cfg.has_option('store_crypt', 'key_path'):
+        if not self.cfg_file_parser.has_option('store_crypt', 'key_path'):
             return None
-        key_path = self.cfg.get('store_crypt', 'key_path')
+        key_path = self.cfg_file_parser.get('store_crypt', 'key_path')
         if not os.path.exists(key_path):
             raise InvalidConfigError('key file %s doesn\'t exist' % key_path)
 
@@ -538,32 +544,32 @@ class SeafileConfig(object):
         cache_provider = envs.get("CACHE_PROVIDER")
         if cache_provider == "redis" or cache_provider == "memcached":
             return self.load_cache_from_env (envs)
-        if not self.has_cfg:
+        if not self.has_cfg_file:
             return None
-        if self.cfg.has_option('redis', 'redis_host'):
-            host = self.cfg.get('redis', 'redis_host')
-            if self.cfg.has_option('redis', 'redis_port'):
-                port = self.cfg.get('redis', 'redis_port')
+        if self.cfg_file_parser.has_option('redis', 'redis_host'):
+            host = self.cfg_file_parser.get('redis', 'redis_host')
+            if self.cfg_file_parser.has_option('redis', 'redis_port'):
+                port = self.cfg_file_parser.get('redis', 'redis_port')
             else:
                 port = 6379
-            if self.cfg.has_option('redis', 'redis_expiry'):
-                expiry = self.cfg.get('redis', 'redis_expiry')
+            if self.cfg_file_parser.has_option('redis', 'redis_expiry'):
+                expiry = self.cfg_file_parser.get('redis', 'redis_expiry')
             else:
                 expiry = 24 * 3600
-            if self.cfg.has_option('redis', 'max_connections'):
-                max_connections = self.cfg.get('redis', 'max_connections')
+            if self.cfg_file_parser.has_option('redis', 'max_connections'):
+                max_connections = self.cfg_file_parser.get('redis', 'max_connections')
             else:
                 max_connections = 20
-            if self.cfg.has_option('redis', 'redis_password'):
-                passwd = self.cfg.get('redis', 'redis_password')
+            if self.cfg_file_parser.has_option('redis', 'redis_password'):
+                passwd = self.cfg_file_parser.get('redis', 'redis_password')
             else:
                 passwd = None
             return get_redis_cache(host, port, expiry, int(max_connections), passwd)
 
-        if self.cfg.has_option('memcached', 'memcached_options'):
-            mc_options = self.cfg.get('memcached', 'memcached_options')
-            if self.cfg.has_option('memcached', 'memcached_expiry'):
-                expiry = self.cfg.get('memcached', 'memcached_expiry')
+        if self.cfg_file_parser.has_option('memcached', 'memcached_options'):
+            mc_options = self.cfg_file_parser.get('memcached', 'memcached_options')
+            if self.cfg_file_parser.has_option('memcached', 'memcached_expiry'):
+                expiry = self.cfg_file_parser.get('memcached', 'memcached_expiry')
             else:
                 expiry = 24 * 3600
 
@@ -623,7 +629,7 @@ class SeafObjStoreFactory(object):
         if self.seafile_cfg.storage_type == 'multiple':
             from seafobj.db import init_db_session_class
             self.enable_storage_classes = True
-            self.session = init_db_session_class(self.seafile_cfg.cfg)
+            self.session = init_db_session_class(self.seafile_cfg.cfg_file_parser)
 
     def get_obj_stores(self, obj_type):
         try:
@@ -632,7 +638,7 @@ class SeafObjStoreFactory(object):
         except KeyError:
             raise RuntimeError('unknown obj_type ' + obj_type)
 
-        for bend in self.seafile_cfg.json_cfg:
+        for bend in self.seafile_cfg.multi_backend_cfg:
             storage_id = bend['storage_id']
 
             crypto = self.seafile_cfg.crypto
