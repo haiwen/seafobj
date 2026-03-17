@@ -23,7 +23,7 @@ def get_ceph_conf(cfg, section):
     from seafobj.backends.ceph import CephConf
 
     logging.info(
-        "Load ceph config: ceph_config=%s pool=%s ceph_clinet_id=%s",
+        "Load ceph config from config file: ceph_config=%s pool=%s ceph_clinet_id=%s",
         config_file,
         pool_name,
         ceph_client_id,
@@ -40,6 +40,13 @@ def get_ceph_conf_from_json(cfg):
         ceph_client_id = cfg['ceph_client_id']
 
     from seafobj.backends.ceph import CephConf
+
+    logging.info(
+        "Load ceph config from json: ceph_config=%s pool=%s ceph_clinet_id=%s",
+        config_file,
+        pool_name,
+        ceph_client_id,
+    ) 
     conf = CephConf(config_file, pool_name, ceph_client_id)
 
     return conf
@@ -88,7 +95,7 @@ def get_s3_conf(cfg, section):
         use_iam_role = True
 
     logging.info(
-        "Load s3 config: bucket=%s host=%s port=%s region=%s "
+        "Load s3 config from config file: bucket=%s host=%s port=%s region=%s "
         "use_https=%s use_v4_sig=%s path_style_request=%s use_iam_role=%s",
         bucket,
         host,
@@ -155,7 +162,7 @@ def get_s3_conf_from_env(obj_type):
         use_iam_role = True
 
     logging.info(
-        "Load s3 config: bucket=%s host=%s port=%s region=%s "
+        "Load s3 config from env: bucket=%s host=%s port=%s region=%s "
         "use_https=%s use_v4_sig=%s path_style_request=%s use_iam_role=%s",
         bucket,
         host,
@@ -211,6 +218,19 @@ def get_s3_conf_from_json(cfg):
     if 'sse_c_key' in cfg:
         sse_c_key = cfg['sse_c_key']
 
+    logging.info(
+        "Load s3 config from json: bucket=%s host=%s port=%s region=%s "
+        "use_https=%s use_v4_sig=%s path_style_request=%s use_iam_role=%s",
+        bucket,
+        host,
+        port,
+        aws_region,
+        use_https,
+        use_v4_sig,
+        path_style_request,
+        False,
+    )
+
     from objwrapper.s3 import S3Conf
     conf = S3Conf(key_id, key, bucket, host, port, use_v4_sig, aws_region, use_https, path_style_request, sse_c_key, False)
 
@@ -232,7 +252,7 @@ def get_oss_conf(cfg, section):
         use_https = cfg.getboolean(section, 'use_https')
 
     logging.info(
-        "Load oss config: bucket=%s endpoint=%s region=%s use_https=%s",
+        "Load oss config from config file: bucket=%s endpoint=%s region=%s use_https=%s",
         bucket,
         endpoint,
         region,
@@ -261,6 +281,14 @@ def get_oss_conf_from_json(cfg):
     if 'use_https' in cfg:
         if str(cfg['use_https']).lower().strip() == 'true':
             use_https = True
+
+    logging.info(
+        "Load oss config from json: bucket=%s endpoint=%s region=%s use_https=%s",
+        bucket,
+        endpoint,
+        region,
+        use_https,
+    )
 
     from objwrapper.alioss import OSSConf
     conf = OSSConf(key_id, key, bucket, endpoint, region, use_https)
@@ -294,7 +322,7 @@ def get_swift_conf(cfg, section):
         domain = 'default'
 
     logging.info(
-        "Load swift config: user_name=%s container=%s auth_host=%s auth_ver=%s "
+        "Load swift config from config file: user_name=%s container=%s auth_host=%s auth_ver=%s "
         "tenant=%s use_https=%s region=%s domain=%s",
         user_name,
         container,
@@ -335,6 +363,19 @@ def get_swift_conf_from_json (cfg):
         domain = cfg['domain']
     else:
         domain = 'default'
+
+    logging.info(
+        "Load swift config from json: user_name=%s container=%s auth_host=%s auth_ver=%s "
+        "tenant=%s use_https=%s region=%s domain=%s",
+        user_name,
+        container,
+        auth_host,
+        auth_ver,
+        tenant,
+        use_https,
+        region,
+        domain
+    )
 
     from seafobj.backends.swift import SwiftConf
     conf = SwiftConf(user_name, password, container, auth_host, auth_ver, tenant, use_https, region, domain)
