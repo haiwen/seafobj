@@ -40,7 +40,7 @@ def create_engine_from_conf(config):
         if seafile_data_dir != '':
             path = os.path.join(seafile_data_dir, 'seafile.db')
         else:
-            logging.warning('SEAFILE_DATA_DIR not set, can not load database.')
+            logging.warning('SEAFILE_DATA_DIR not set, can not load sqlite database.')
             return None
         db_url = "sqlite:///%s" % path
         need_connection_pool_fix = False
