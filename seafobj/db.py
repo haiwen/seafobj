@@ -33,18 +33,7 @@ def load_db_url_from_env():
 def create_engine_from_conf(config):
     need_connection_pool_fix = True
 
-    if not config.has_section('database'):
-        seafile_data_dir = os.environ.get('SEAFILE_DATA_DIR','')
-        if seafile_data_dir == '':
-            seafile_data_dir = os.environ.get('SEAFILE_CONF_DIR', '')
-        if seafile_data_dir != '':
-            path = os.path.join(seafile_data_dir, 'seafile.db')
-        else:
-            logging.warning('SEAFILE_DATA_DIR not set, can not load sqlite database.')
-            return None
-        db_url = "sqlite:///%s" % path
-        need_connection_pool_fix = False
-    else:
+    if config.has_section('database'):
         backend = config.get('database', 'type')
 
         if backend == 'mysql':
