@@ -273,30 +273,18 @@ class SeafFSManager(object):
         return dirents
 
     def parse_blocks_v0(self, data, obj_id):
-        '''binray format'''
-        blocks = []
-
+        '''Binary header followed by zero or more 20-byte block IDs.'''
         fmt = '!iq'
-        mode, size = struct.unpack_from(fmt, data, offset=0)
-        if mode != SEAF_METADATA_TYPE_FILE:
-            raise ObjectFormatError('corrupt file object ' + obj_id)
-
         off = struct.calcsize(fmt)
-        while True:
-            fmt = "!20s"
-            bid, = struct.unpack_from(fmt, data, offset = off)
-            hexs = []
-            for d in bid:
-                x = binascii.b2a_hex(d)
-                hexs.append(x)
-
-            blk_id = ''.join(hexs)
-            blocks.append(blk_id)
-
-            off += struct.calcsize(fmt)
-            if off > len(data) - 20:
-                break
-
+        if len(data) < off or (len(data) - off) % 20:
+            raise ObjectFormatError('corrupt file object ' + obj_id)
+        mode, size = struct.unpack_from(fmt, data, offset=0)
+        if mode != SEAF_METADATA_TYPE_FILE or size < 0:
+            raise ObjectFormatError('corrupt file object ' + obj_id)
+        if size > 0 and len(data) == off:
+            raise ObjectFormatError('corrupt file object ' + obj_id)
+        blocks = [binascii.hexlify(data[pos:pos + 20]).decode('ascii')
+                  for pos in range(off, len(data), 20)]
         return blocks, size
 
     def parse_blocks_v1(self, data, obj_id):
