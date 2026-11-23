@@ -2,7 +2,7 @@ termcolor>=2.3.0
 requests>=2.31.0
 pytest>=7.4.0
 pytest-instafail
-boto3==1.28.12
+boto3>=1.44.9
 oss2==2.18.4
 sqlalchemy==2.0.18
 pylibmc==1.6.3
